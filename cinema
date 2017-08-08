@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+import argparse
+import clib
+import configparser
+import os
+import textwrap
+
+CINEMA_VERSION = "0.5"
+APP_VERSION = "0.1"
+
+conf_parser = argparse.ArgumentParser(
+    # Turn off help, so we print all options in response to -h
+    add_help=False
+    )
+
+args, remaining_argv = conf_parser.parse_known_args()
+
+# Don't surpress add_help here so it will handle -h
+parser = argparse.ArgumentParser(
+    # Don't mess with format of description
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    # Inherit options from config_parser
+    parents=[conf_parser],
+    # print script description with -h/--help
+    epilog=textwrap.dedent('''\
+        examples:
+        
+          cinema (no args)
+            will print cinema information and exit
+
+            ''')
+)
+
+# parser.set_defaults(**defaults)
+parser.add_argument( "-c", "--check", 
+    help="check the cinema database supplied")
+parser.add_argument( "-v", "--verbose", action="store_true", default=False,
+    help="report verbosely")
+parser.add_argument( "--version", action="version", version=str(APP_VERSION))
+
+args = parser.parse_args(remaining_argv)
+
+# initialize the clib module
+clib.init()
+clib.set_verbose( args.verbose )
+
+if args.check is not None:
+    exit_code = False
+    res = clib.check_database( args.check )
+
+    if res[0] != clib.CINEMA_INVALID_DATABASE:
+        exit_code = True
+        print("valid database, Spec {0}, v{1}".format( res[0], res[1] ))
+
+    exit( exit_code )
