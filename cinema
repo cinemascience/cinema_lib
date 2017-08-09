@@ -2,11 +2,12 @@
 
 import argparse
 import clib
+import cspec
+import cspecd
 import configparser
 import os
 import textwrap
 
-CINEMA_VERSION = "0.5"
 APP_VERSION = "0.1"
 
 conf_parser = argparse.ArgumentParser(
@@ -49,7 +50,7 @@ if args.check is not None:
     exit_code = False
     res = clib.check_database( args.check )
 
-    if res[0] != clib.CINEMA_INVALID_DATABASE:
+    if res[0] != cspec.CinemaSpec.CINEMA_INVALID_DATABASE:
         exit_code = True
         print("valid database, Spec {0}, v{1}".format( res[0], res[1] ))
 
