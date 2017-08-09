@@ -5,6 +5,7 @@ import clib
 import cspec
 import cspecd
 import configparser
+import logging as log
 import os
 import textwrap
 
@@ -42,9 +43,22 @@ parser.add_argument( "--version", action="version", version=str(APP_VERSION))
 
 args = parser.parse_args(remaining_argv)
 
-# initialize the clib module
-clib.init()
-clib.set_verbose( args.verbose )
+# ---------------------------------------------------------------------------
+#
+# set up the proper reporting mode
+#
+# use these calls as needed for reporting:
+#
+# log.info("verbose message") 
+# log.warning("warning message") 
+# log.error("error message") 
+#
+# ---------------------------------------------------------------------------
+if (args.verbose):
+    log.basicConfig(format="%(levelname)s: %(message)s", level=log.DEBUG)
+    log.info("setting verbose output.")
+else:
+    log.basicConfig(format="%(levelname)s: %(message)s")
 
 if args.check is not None:
     exit_code = False

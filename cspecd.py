@@ -5,7 +5,6 @@ import cspec
 
 class CinemaSpecD(cspec.CinemaSpec):
     CSV_FILENAME = "data.csv"
-    CINEMA_INVALID_DATABASE = "invalid"
 
     def __init__(self):
         self.dbspec    = "N"
@@ -73,7 +72,7 @@ class CinemaSpecD(cspec.CinemaSpec):
             log.error("database {0} does not exist".format( dbname ))
 
         if res:
-            log.info("Check succeeded: valid D database")
+            log.info("check succeeded: valid D database")
 
         return res
         

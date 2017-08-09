@@ -1,30 +1,9 @@
-import os
-import logging as log
-import csv
-import sqlite3
 import cspec
 import cspecd
+import csv
+import sqlite3
+import os
 
-# ---------------------------------------------------------------------------
-#
-# set up the proper reporting mode
-#
-# use these calls as needed for reporting:
-#
-# log.info("verbose message") 
-# log.warning("warning message") 
-# log.error("error message") 
-#
-# ---------------------------------------------------------------------------
-def init():
-    log.basicConfig(format="%(levelname)s: %(message)s")
-
-def set_verbose( verbose ):
-    if verbose:
-        log.basicConfig(format="%(levelname)s: %(message)s", level=log.DEBUG)
-        log.info("Setting verbose output.")
-    else:
-        log.basicConfig(format="%(levelname)s: %(message)s")
 
 # ---------------------------------------------------------------------------
 #
