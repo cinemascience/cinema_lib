@@ -1,1 +1,1 @@
-from .impl import *
+from clib.spec.d.impl import *
