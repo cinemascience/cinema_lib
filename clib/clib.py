@@ -1,5 +1,5 @@
-from . import cspec
-from . import cspecd
+import spec
+import spec.d as d
 import os
 
 # ---------------------------------------------------------------------------
@@ -8,9 +8,9 @@ import os
 #
 # ---------------------------------------------------------------------------
 def check_database( dbname ):
-    res = [cspec.CinemaSpec.CINEMA_INVALID_DATABASE, "0.0"]
+    res = [spec.CinemaSpec.CINEMA_INVALID_DATABASE, "0.0"]
 
-    spec_d = cspecd.CinemaSpecD()
+    spec_d = specd.CinemaSpecD()
 
     if spec_d.check_database( dbname ):
         res = ["D", "1.0"]

@@ -1,9 +1,34 @@
 import os
 import logging as log
 import csv
-from . import cspec
+from .. import spec
 
-class CinemaSpecD(cspec.CinemaSpec):
+SPECD_CSV_FILENAME = "data.csv"
+
+def get_csv_reader(db, csv=SPECD_CSV_FILENAME):
+    """
+    Return a csv reader, assuming a valid Spec D csv database.
+
+    arguments:
+        db : string
+            POSIX path to Cinema database
+        csv : string = SPECD_CSV_FILENAME
+            POSIX relative path to Cinema CSV
+    """
+
+    reader = None
+    csv = os.path.join(db, csv)
+
+    if os.path.isfile(csv):
+        f = open(csv, "r") 
+        reader = csv.reader(f, delimiter=",", doublequote=False, 
+                 escapechar=None)
+    else:
+        log.warning("csvfile {0} does not exist", format(csvfile))
+
+    return reader
+
+class CinemaSpecD(spec.CinemaSpec):
     CSV_FILENAME = "data.csv"
 
     def __init__(self):
