@@ -2,6 +2,8 @@
 Specification D functions and utilities for reading and validating databases.
 """
 
+from ..a import SPEC_A_JSON_FILENAME
+
 import os
 import logging as log
 import csv
@@ -9,13 +11,11 @@ from functools import reduce
 from itertools import product
 import json
 
-SPEC_A_JSON_FILENAME = "info.json"
 SPEC_D_CSV_FILENAME = "data.csv"
 FILE_HEADER_KEYWORD = "FILE"
 TYPE_INTEGER = "INTEGER"
 TYPE_FLOAT = "FLOAT"
 TYPE_STRING = "STRING"
-CINEMA_DATABASE_EXT = ".cdb"
 
 def get_csv_reader(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """
