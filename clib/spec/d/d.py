@@ -1,7 +1,7 @@
 import os
 import logging as log
 import csv
-from .. import spec
+from ... import spec
 
 SPECD_CSV_FILENAME = "data.csv"
 

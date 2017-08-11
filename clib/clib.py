@@ -1,5 +1,5 @@
-import spec
-import spec.d as d
+from . import spec
+from .spec import d
 import os
 
 # ---------------------------------------------------------------------------

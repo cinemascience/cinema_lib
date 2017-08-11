@@ -1,4 +1,3 @@
-
 #
 # Cinema spec base object
 #
