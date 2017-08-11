@@ -1,1 +1,3 @@
-
+"""
+Cinema Specification utility functions.
+"""
