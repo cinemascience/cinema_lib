@@ -35,11 +35,13 @@ parser = argparse.ArgumentParser(
 )
 
 # parser.set_defaults(**defaults)
-parser.add_argument( "-d", "--dietrich", 
+parser.add_argument("-d", "--dietrich", 
     help="check the Cinema Spec D database")
-parser.add_argument( "-v", "--verbose", action="store_true", default=False,
+parser.add_argument("--a2d", "--astairetodietrich",
+    help="create a Spec D CSV file from a Spec A JSON")
+parser.add_argument("-v", "--verbose", action="store_true", default=False,
     help="report verbosely")
-parser.add_argument( "--version", action="version", version=str(APP_VERSION))
+parser.add_argument("--version", action="version", version=str(APP_VERSION))
 
 args = parser.parse_args(remaining_argv)
 
@@ -62,4 +64,8 @@ else:
 
 if args.dietrich is not None:
     if not d.check_database(args.dietrich):
+        exit(True)
+
+if args.a2d is not None:
+    if not d.convert_from_spec_a(args.a2d):
         exit(True)

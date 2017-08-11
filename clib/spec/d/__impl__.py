@@ -6,13 +6,16 @@ import os
 import logging as log
 import csv
 from functools import reduce
+from itertools import product
+import json
 
+SPEC_A_JSON_FILENAME = "info.json"
 SPEC_D_CSV_FILENAME = "data.csv"
 FILE_HEADER_KEYWORD = "FILE"
 TYPE_INTEGER = "INTEGER"
 TYPE_FLOAT = "FLOAT"
 TYPE_STRING = "STRING"
-
+CINEMA_DATABASE_EXT = ".cdb"
 
 def get_csv_reader(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """
@@ -53,7 +56,7 @@ def typecheck(values):
         values : list of strings
     
     returns:
-        list of types (TYPE_INTEGER, TYPE_FLOAT, TYPE_STRING, or TYPE_FILE)
+        list of types (TYPE_INTEGER, TYPE_FLOAT, or TYPE_STRING)
     """
 
     types = []
@@ -154,92 +157,37 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
     log.info("Check succeeded.")
     return True
 
-#### TODO To fix
+def convert_from_spec_a(db_path):
+    csv_fn = os.path.join(db_path, SPEC_D_CSV_FILENAME)
+    if os.path.exists(csv_fn):
+        log.error("{0} exists. Refusing to execute.".format(csv_fn))
+        return False
 
-def __generate_results(self, index, values, fieldnames, inputJson):
-    results = []
-    for val in inputJson["arguments"][fieldnames[index]]["values"]:
-        values[fieldnames[index]] = val
-        if index == len(fieldnames)-1:
-            # print values
-            results.append(copy.copy(values))
-        else:
-            results += (this.__generate_results(index+1,
-                            copy.copy(values),fieldnames, inputJson))
-    return results
-
-
-# ----------------------------------------------------------------------
-#
-#
-#
-# ----------------------------------------------------------------------
-def convert_atod(self, inputDB, newDB): 
-    # check that the new DB path is valid and doesn't exist
-    newDB = newDB.rstrip("/")
-    baseFile, extension = os.path.splitext(newDB)
-    if extension != ".cbd":
-        # add cdb extension
-        newDB = newDB + ".cdb"
-
-    # check output path and create; exit if error
-    if os.path.isdir( newDB ):
-        log.warning("Output database {0} already exists.".format(newDB))
-        exit(1)
-
-    log.info("Creating new Cinema database at {0}".format(newDB))
-
+    json_fn = os.path.join(db_path, SPEC_A_JSON_FILENAME)
+    if not os.path.exists(json_fn):
+        log.error("{0} does not exist.".format(json_fn))
+        return False
+   
+    # create the csv 
+    log.info("Creating new Spec D CSV at \"{0}\".".format(db_path))
     try:
-            os.mkdir(OUTPUT_DIRECTORY)
-    except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                    raise
-            pass
-    
-    jsonFile = os.path.join(inputDB, "image", "info.json") 
-    inputJson = None
-    with open(jsonFile) as f:
-        inputJson = json.load(f)
-    
-        # get fieldnames (parameters) from JSON
-        fieldnames = []
-        for arg in inputJson["arguments"]:
-            fieldnames.append(str(arg))
-        
-        # Write csv and copy images
-        csvFileName = os.path.join( newDB, 'data.csv')
-        with open(csvFileName, 'w+') as csvfile:
-            namePattern = str(inputJson["name_pattern"])
-            newExt = os.path.splitext(namePattern)[1]
-            
-            # get results
-            values = {}
-            results = this.__generate_results(0, {}, fieldnames, inputJson)
-            
-            # we have to add one more fieldname, specific to the conversion
-            fieldnames.append("FILE")
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            newFileID = 0
-            for result in results:
-                pattern = copy.copy(namePattern)
-                for dimension in result.iterkeys():
-                    pattern = pattern.replace('{'+dimension+'}',
-                                str(result[dimension]))
-                # If an image for the result exists, copy it to output
-                # and write a line to the csv
-                if os.path.exists(os.path.join(inputDB, pattern)):
-                    src = os.path.join(inputDB, pattern)
-                    newFileID += 1
-                    newFileName = str(newFileID)+str(newExt)
-                    dst = os.path.join(newDB, newFileName) 
-                    copyfile(src,dst)
-                    result["FILE"] = newFileName
-                    writer.writerow(result)
-            log.info("Done converting database")
+        with open(json_fn) as jf, open(csv_fn, "w") as f:
+            j = json.load(jf)
+            # get the keys and write the header
+            keylist = list(j['arguments'].keys())
+            for col in keylist:
+                f.write("{0},".format(col))
+            f.write("FILE\n")
+            # Cartesian product
+            for row in product(*[i['values'] for i in 
+                               j['arguments'].values()]):
+                for col in row:
+                    f.write("{0},".format(col))
+                kv = {k: v for k, v in zip(keylist, row)}
+                f.write(j['name_pattern'].format(**kv) + '\n')
+    except Exception as e:
+        log.error("Conversion of database failed with \"{0}\".".format(e))
+        return False
 
-#           except IOError:
-#               log.warning("Cannot open csv file {0}".format(csvFileName))
-             
-#       except IOError:
-#           log.warning("Cannot open json file {0}".format(jsonFile))
+    return True
+
