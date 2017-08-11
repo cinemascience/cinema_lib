@@ -13,8 +13,6 @@ TYPE_INTEGER = "INTEGER"
 TYPE_FLOAT = "FLOAT"
 TYPE_STRING = "STRING"
 
-## TODO REMOVE
-log.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=log.DEBUG, datefmt='%I:%M:%S')
 
 def get_csv_reader(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """

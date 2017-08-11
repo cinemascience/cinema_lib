@@ -55,10 +55,10 @@ args = parser.parse_args(remaining_argv)
 #
 # ---------------------------------------------------------------------------
 if (args.verbose):
-    log.basicConfig(format="%(levelname)s: %(message)s", level=log.DEBUG)
-    log.info("setting verbose output.")
+    log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=log.DEBUG, datefmt='%I:%M:%S')
 else:
     log.basicConfig(format="%(levelname)s: %(message)s")
+    log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', datefmt='%I:%M:%S')
 
 if args.dietrich is not None:
     if not d.check_database(args.dietrich):
