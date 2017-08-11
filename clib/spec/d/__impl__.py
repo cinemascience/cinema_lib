@@ -135,7 +135,8 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
             for i in files:
                 fn = os.path.join(db_path, row[i])
                 if not os.path.exists(fn):
-                    log.error("File \"{0}\" is missing.".format(fn))
+                    log.error(
+                      "File \"{0}\" on row #{1} is missing.".format(fn, n_rows))
                     row_error = True
                 else:
                     n_files = n_files + 1
