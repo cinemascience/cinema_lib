@@ -158,6 +158,20 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
     return True
 
 def convert_from_spec_a(db_path):
+    """
+    Create a Spec D CSV in a Spec A database.
+
+    arguments:
+        db_path : string
+            POSIX path to a Cinema Spec A database
+
+    returns:
+        True if it was able to create it, False if not
+
+    side effects:
+        logs error and info messages to the logger
+        writes out a SPEC_D_CSV_FILENAME at *db_path*
+    """
     csv_fn = os.path.join(db_path, SPEC_D_CSV_FILENAME)
     if os.path.exists(csv_fn):
         log.error("{0} exists. Refusing to execute.".format(csv_fn))
