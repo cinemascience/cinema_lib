@@ -149,7 +149,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
             raise
         else:
             log.info("{0} files validated to be present.".format(n_files))
-            log.info("Number of rows are {0}.".format(n_rows))
+        log.info("Number of rows are {0}.".format(n_rows))
     except:
         log.error("Check failed. \"{0}\" is invalid.".format(db_path))
         return False
