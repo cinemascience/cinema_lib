@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import clib
-import clib.spec as spec
 import clib.spec.d as d
 import configparser
 import logging as log
