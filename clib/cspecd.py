@@ -1,7 +1,7 @@
 import os
 import logging as log
 import csv
-import cspec
+from . import cspec
 
 class CinemaSpecD(cspec.CinemaSpec):
     CSV_FILENAME = "data.csv"

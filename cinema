@@ -2,8 +2,8 @@
 
 import argparse
 import clib
-import cspec
-import cspecd
+import clib.cspec as cspec
+import clib.cspecd as cspecd
 import configparser
 import logging as log
 import os

@@ -1,9 +1,6 @@
-import cspec
-import cspecd
-import csv
-import sqlite3
+from . import cspec
+from . import cspecd
 import os
-
 
 # ---------------------------------------------------------------------------
 #
