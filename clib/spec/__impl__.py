@@ -14,7 +14,7 @@ CINEMA_DATABASE_EXT = ".cdb"
 
 def convert_from_spec_a(db_path):
     """
-    Create a Spec D CSV in a Spec A database.
+    Create a Spec D CSV, in place, in a Spec A database.
 
     arguments:
         db_path : string

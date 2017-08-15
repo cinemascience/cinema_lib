@@ -32,26 +32,17 @@ parser = argparse.ArgumentParser(
 parser.add_argument("-d", "--dietrich", 
     help="validate a Spec D database")
 parser.add_argument("--a2d", "--astairetodietrich",
-    help="create a Spec D database from a Spec A database")
+    help="create a Spec D database from a Spec A database, in place")
 parser.add_argument("-v", "--verbose", action="store_true", default=False,
     help="report verbosely")
 parser.add_argument("-q", "--quick", action="store_true", default=False,
-    help="perform quick validation checks if checking")
+    help="perform quick validation checks, if validating")
 parser.add_argument("--version", action="version", version=str(CL_VERSION))
 
 args = parser.parse_args(remaining_argv)
 
-# ---------------------------------------------------------------------------
-#
 # set up the proper reporting mode
-#
-# use these calls as needed for reporting:
-#
-# log.info("verbose message") 
-# log.warning("warning message") 
-# log.error("error message") 
-#
-# ---------------------------------------------------------------------------
+# log.info, log.warning, log.error
 if (args.verbose):
     log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', 
                     level=log.DEBUG, datefmt='%I:%M:%S')

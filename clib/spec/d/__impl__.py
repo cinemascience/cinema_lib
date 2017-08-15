@@ -15,7 +15,7 @@ TYPE_STRING = "STRING"
 
 def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """
-    Return a csv reader, assuming a valid Spec D csv database.
+    Return a row iterator, assuming a valid Spec D csv database.
 
     arguments:
         db_path : string
@@ -35,7 +35,7 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
     if os.path.isfile(fn):
         f = open(fn, "r") 
         reader = csv.reader(f, delimiter=",", doublequote=False, 
-                 escapechar=None)
+                     escapechar=None)
 
         def wrapped(reader):
             for row in reader:
@@ -57,7 +57,6 @@ def typecheck(values):
     """
 
     types = []
-
     for v in values:
         try:
             test = int(v)
@@ -114,7 +113,6 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         files = [i for i, t, h in zip(range(0, len(types)), types, header) if
                  h == FILE_HEADER_KEYWORD and t == TYPE_STRING]
         log.info("FILE column indices are {0}.".format(files))
-
 
         # check the rows if we aren't doing a quick check
         if not quick:
