@@ -12,7 +12,7 @@ from itertools import product
 
 CINEMA_DATABASE_EXT = ".cdb"
 
-def convert_from_spec_a(db_path):
+def convert_d_to_a(db_path):
     """
     Create a Spec D CSV, in place, in a Spec A database.
 
@@ -27,6 +27,9 @@ def convert_from_spec_a(db_path):
         logs error and info messages to the logger
         writes out a SPEC_D_CSV_FILENAME at *db_path*
     """
+
+    log.info("Creating new Spec D CSV at \"{0}\".".format(db_path))
+
     csv_fn = os.path.join(db_path, SPEC_D_CSV_FILENAME)
     if os.path.exists(csv_fn):
         log.error("{0} exists. Refusing to execute.".format(csv_fn))
@@ -38,7 +41,6 @@ def convert_from_spec_a(db_path):
         return False
    
     # create the csv 
-    log.info("Creating new Spec D CSV at \"{0}\".".format(db_path))
     try:
         with open(json_fn) as jf, open(csv_fn, "w") as f:
             j = json.load(jf)

@@ -58,7 +58,7 @@ if args.dietrich is not None:
 
 # convert A to D
 elif args.a2d is not None:
-    if not spec.convert_from_spec_a(args.a2d):
+    if not spec.convert_d_to_a(args.a2d):
         exit(True)
 
 # print help

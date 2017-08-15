@@ -15,7 +15,7 @@ TYPE_STRING = "STRING"
 
 def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """
-    Return a row iterator, assuming a valid Spec A database. Does
+    Return a row iterator, assuming a valid Spec D database. Does
     not validate that it is a proper Spec D database. 
 
     arguments:
@@ -90,8 +90,6 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         logs error and info messages to the logger
     """
 
-    res = True
-
     log.info("Checking database \"{0}\" as Spec D.".format(db_path))
     try:
         # get the reader
@@ -112,6 +110,10 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         log.info("First data row is {0}.".format(row))
         types = typecheck(row)
         log.info("Data types are {0}.".format(types))
+        if len(types) != len(header):
+            log.error(
+                "Number of columns in header and first row do not match.")
+            header_error = True
         # check FILE
         files = [i for i, t, h in zip(range(0, len(types)), types, header) if
                  h == FILE_HEADER_KEYWORD]
@@ -128,7 +130,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                 log.error("FILE column {0} is not string.".format(i))
                 header_error = True
         if header_error:
-            raise Exception("Error checking FILE and types.")
+            raise Exception("Error checking header and types.")
 
         # check the rows if we aren't doing a quick check
         if not quick:
