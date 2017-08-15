@@ -157,25 +157,28 @@ def check_database(db_path, json_path=SPEC_A_JSON_FILENAME, quick=False):
             raise Exception("Missing values for arguments.")
 
         # check the files
-        n_files = 0
-        total_files = 0
-        keylist = list(db[KEY_ARGUMENTS].keys())
-        for row in product(*[k[KEY_ARG_VALUES] for k in 
-                           db[KEY_ARGUMENTS].values()]):
-            total_files = total_files + 1
-            kv = {k: v for k, v in zip(keylist, row)}
-            fp = db['name_pattern'].format(**kv)
-            if not os.path.isfile(os.path.join(db_path, fp)):
-                log.error("File \"{0}\" is missing.".format(fp))
-                file_error = True
-            else:
-                n_files = n_files + 1
+        if not quick:
+            n_files = 0
+            total_files = 0
+            keylist = list(db[KEY_ARGUMENTS].keys())
+            for row in product(*[k[KEY_ARG_VALUES] for k in 
+                               db[KEY_ARGUMENTS].values()]):
+                total_files = total_files + 1
+                kv = {k: v for k, v in zip(keylist, row)}
+                fp = db['name_pattern'].format(**kv)
+                if not os.path.isfile(os.path.join(db_path, fp)):
+                    log.error("File \"{0}\" is missing.".format(fp))
+                    file_error = True
+                else:
+                    n_files = n_files + 1
 
-        if n_files != total_files:
-            log.error("Only {0} files out of {1} were found.".format(n_files,
-                total_files))
+            if n_files != total_files:
+                log.error("Only {0} files out of {1} were found.".format(
+                    n_files, total_files))
+            else:
+                log.info("{0} files validated to be present.".format(n_files))
         else:
-            log.info("{0} files validated to be present.".format(n_files))
+            log.info("Doing a quick check. Not checking files.")
 
         # delay raising
         if unnkey_error:
