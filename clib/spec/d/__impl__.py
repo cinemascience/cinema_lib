@@ -79,6 +79,9 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
             POSIX path to Cinema database
         csv_path : string = SPEC_D_CSV_FILENAME
             POSIX relative path to Cinema CSV
+        quick : boolean = False
+            if True, perform a quick check, which means only checking
+            the first two lines
 
     returns:
         True if it is valid, False otherwise
@@ -112,41 +115,46 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                  h == FILE_HEADER_KEYWORD and t == TYPE_STRING]
         log.info("FILE column indices are {0}.".format(files))
 
-        # reopen the reader because we are lazy and skip the header
-        reader = get_iterator(db_path, csv_path)
-        next(reader)
 
-        # check the rows
-        row_error = False
-        n_rows = 0
-        n_files = 0
-        for row in reader:
-            n_rows = n_rows + 1
-            if len(header) != len(row):
-                log.error(
-                  "Unequal number of columns on row #{0}.".format(n_rows))
-                row_error = True
-            if not reduce(lambda x, y: x and y, 
-                          [a == b for a, b in zip(typecheck(row), types)],
-                          True):
-              log.error("Types do not match on row #{0}:".format(n_rows))
-              row_error = True
-            # check the files
-            for i in files:
-                fn = os.path.join(db_path, row[i])
-                if not os.path.exists(fn):
+        # check the rows if we aren't doing a quick check
+        if not quick:
+            # reopen the reader because we are lazy and skip the header
+            reader = get_iterator(db_path, csv_path)
+            next(reader)
+
+            row_error = False
+            n_rows = 0
+            n_files = 0
+            for row in reader:
+                n_rows = n_rows + 1
+                if len(header) != len(row):
                     log.error(
-                      "File \"{0}\" on row #{1} is missing.".format(fn, n_rows))
+                      "Unequal number of columns on row #{0}.".format(n_rows))
                     row_error = True
-                else:
-                    n_files = n_files + 1
+                if not reduce(lambda x, y: x and y, 
+                              [a == b for a, b in zip(typecheck(row), types)],
+                              True):
+                  log.error("Types do not match on row #{0}:".format(n_rows))
+                  row_error = True
+                # check the files
+                for i in files:
+                    fn = os.path.join(db_path, row[i])
+                    if not os.path.exists(fn):
+                        log.error(
+                          "File \"{0}\" on row #{1} is missing.".format(fn, 
+                              n_rows))
+                        row_error = True
+                    else:
+                        n_files = n_files + 1
 
-        if row_error:
-            log.warning("Only {0} files were found.".format(n_files))
-            raise
+            if row_error:
+                log.warning("Only {0} files were found.".format(n_files))
+                raise
+            else:
+                log.info("{0} files validated to be present.".format(n_files))
+                log.info("Number of rows are {0}.".format(n_rows))
         else:
-            log.info("{0} files validated to be present.".format(n_files))
-        log.info("Number of rows are {0}.".format(n_rows))
+            log.info("Doing a quick check. Not checking row data.")
     except Exception as e:
         log.error("Check failed. \"{0}\" is invalid: {1}".format(db_path, e))
         return False

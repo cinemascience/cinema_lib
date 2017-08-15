@@ -62,7 +62,7 @@ else:
 
 # check dietrich
 if args.dietrich is not None:
-    if not d.check_database(args.dietrich):
+    if not d.check_database(args.dietrich, quick=args.quick):
         exit(True)
 
 # convert A to D
