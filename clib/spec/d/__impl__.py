@@ -25,9 +25,10 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
             POSIX relative path to Cinema CSV
 
     returns:
-        an iterator that returns a list of columns per row, which
-        is open to the Cinema CSV if the csv_path file can be opened, 
-        otherwise returns None
+        an iterator that returns a tuple of data per row if the csv_path 
+        file can be opened, otherwise returns None
+
+        the first row will be the header (column identifiers)
     """
 
     reader = None
@@ -40,7 +41,7 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
 
         def wrapped(reader):
             for row in reader:
-                yield [col.strip() for col in row]
+                yield tuple([col.strip() for col in row])
 
         reader = wrapped(reader)
 
@@ -48,13 +49,13 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
 
 def typecheck(values):
     """
-    Return a list of Spec D types given a list of strings.
+    Return a tuple of Spec D types given an iterator of strings.
 
     arguments:
-        values : list of strings
+        values : iterator of strings
     
     returns:
-        list of types (TYPE_INTEGER, TYPE_FLOAT, or TYPE_STRING)
+        tuple of types (TYPE_INTEGER, TYPE_FLOAT, or TYPE_STRING)
     """
 
     types = []
@@ -68,7 +69,7 @@ def typecheck(values):
                 types.append(TYPE_FLOAT)
             except:
                 types.append(TYPE_STRING)
-    return types
+    return tuple(types)
 
 def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
     """
