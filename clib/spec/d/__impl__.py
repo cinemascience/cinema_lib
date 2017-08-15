@@ -2,6 +2,7 @@
 Cinema Spec D utility functions for reading and validating databases.
 """
 
+import sqlite3
 import os
 import logging as log
 import csv
@@ -12,6 +13,11 @@ FILE_HEADER_KEYWORD = "FILE"
 TYPE_INTEGER = "INTEGER"
 TYPE_FLOAT = "FLOAT"
 TYPE_STRING = "STRING"
+CDB_TO_SQLITE3 = {
+    TYPE_INTEGER: "INTEGER",
+    TYPE_FLOAT: "REAL",
+    TYPE_STRING: "TEXT"
+    }
 
 def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """
@@ -189,4 +195,88 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
     log.info("Check succeeded.")
     return True
 
+def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
+    """
+    Returns a SQLite3 database that backs a Spec D database. Does not check 
+    that the database is valid. By default, will open an in-memory SQLite3,
+    and will be temporary.
+
+    arguments:
+        db_path : string
+            POSIX path to Cinema database
+        csv_path : string = SPEC_D_CSV_FILENAME
+            POSIX relative path to Cinema CSV
+        where : string = ":memory:"
+            where to back the SQLite3 on disk; ":memory:" is temporary in 
+            memory
+            
+    returns:
+        a SQLite3 database if successful, None if not. The table that
+        backs the sqlite3 will be named by the base filename of *db_path*,
+        i.e., if the database is "/home/foo/bar.cdb/" the table will be
+        named "bar".
+
+        strings will be text columns, floats will be real columns, and
+        integers will be integer columns. Column names will be determined
+        by the CSV headers.
+
+    side-effects:
+        will open a file on disk at *where* if given a POSIX path or URI
+
+        logs results to the logger for information and debugging
+    """
+
+    log.info("Converting \"{0}/{1}\" into a SQLite database at \"{2}\".".
+        format(db_path, csv_path, where))
+
+    try:
+        # open the sqlite3
+        db = sqlite3.connect(where)
+        cursor = db.cursor()
+
+        # open the cinema db
+        cdb = get_iterator(db_path, csv_path)
+
+        # get the header and first row
+        header = next(cdb)
+        log.info("Header is {0}.".format(header))
+        first = next(cdb)
+        log.info("First row is {0}.".format(first))
+        types = typecheck(first)
+        log.info("Types are {0}.".format(types))
+
+        # determine if we have more than one FILE
+        # and adjust names
+        files = [i for i, t, h in zip(range(0, len(types)), types, header) if
+                 h == FILE_HEADER_KEYWORD]
+        if len(files) > 0:
+            log.info(
+                "More than one FILE, so numbers will be appended to FILE.")
+            for i in files:
+
+        # figure out the table name
+        name = os.path.splitext(os.path.basename(os.path.dirname(db_path)))[0]
+        log.info("Table name is \"{0}\".".format(name))
+
+        # create the table
+        create = "CREATE TABLE \"{0}\" (".format(name)
+        for h, t in zip(header, types):
+            create = create + "\"" + h + "\" " + CDB_TO_SQLITE3[t] + ","
+        create = create[:-1] + ")"
+        log.info("Create table string is \"{0}\".".format(create))
+        cursor.execute(create)
+
+        # insert the data
+        insert = "INSERT INTO \"{0}\" VALUES (%s)".format(name) % \
+                 ",".join("?"*len(first))
+        log.info("Insert string is \"{0}\".".format(insert))
+        cursor.execute(insert, first)
+        cursor.executemany(insert, cdb)
+
+        # done!
+        log.info("Insertion of data into \"{0}\" was successful.".format(name))
+        return db
+    except Exception as e:
+        log.error("Error in creating database: {0}.".format(e))
+        return None
 
