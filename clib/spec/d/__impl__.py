@@ -140,6 +140,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
             row_error = False
             n_rows = 0
             n_files = 0
+            total_files = 0
             for row in reader:
                 n_rows = n_rows + 1
                 if len(header) != len(row):
@@ -155,6 +156,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                   row_error = True
                 # check the files
                 for i in files:
+                    total_files = total_files + 1
                     fn = os.path.join(db_path, row[i])
                     if not os.path.exists(fn):
                         log.error(
@@ -165,11 +167,14 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                         n_files = n_files + 1
 
             log.info("Number of rows are {0}.".format(n_rows))
-            if row_error:
-                log.error("Only {0} files were found.".format(n_files))
-                raise Exception("Error checking rows.")
+            if n_files != total_files:
+                log.error("Only {0} files out of {1} were found.".format(
+                    n_files, total_files))
             else:
                 log.info("{0} files validated to be present.".format(n_files))
+
+            if row_error:
+                raise Exception("Error checking rows.")
         else:
             log.info("Doing a quick check. Not checking row data.")
 
