@@ -2,6 +2,8 @@
 Specification A functions and utilities for reading and validating databases.
 """
 
+from ..d import FILE_HEADER_KEYWORD
+
 import json
 import os
 import logging as log
@@ -45,6 +47,33 @@ def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
     try:
         with open(json_fn) as jf:
             return json.load(jf)
+    except:
+        return None
+
+def get_iterator(db):
+    """
+    Return a iterator for a list of files assuming a valid Spec A dictionary.
+    Does not validate that it is a proper Spec A database. 
+
+    arguments:
+        db : dictionary 
+            a dictionary of Spec A data
+
+    returns:
+        an iterator that returns dictionaries for the contents of the Cinema 
+        JSON if the file can be opened, otherwise returns None
+
+        each element is a dictionary of arguments and FILE
+    """
+    try:
+        keylist = list(db[KEY_ARGUMENTS].keys())
+        def filelist():
+            for row in product(*[k[KEY_ARG_VALUES] for k in 
+                           db[KEY_ARGUMENTS].values()]):
+                kv = {k: v for k, v in zip(keylist, row)}
+                kv[FILE_HEADER_KEYWORD] = db[KEY_NAME_PATTERN].format(**kv)
+                yield kv
+        return filelist()
     except:
         return None
 
@@ -160,14 +189,12 @@ def check_database(db_path, json_path=SPEC_A_JSON_FILENAME, quick=False):
         if not quick:
             n_files = 0
             total_files = 0
-            keylist = list(db[KEY_ARGUMENTS].keys())
-            for row in product(*[k[KEY_ARG_VALUES] for k in 
-                               db[KEY_ARGUMENTS].values()]):
+            files = get_iterator(db)
+            for row in files:
                 total_files = total_files + 1
-                kv = {k: v for k, v in zip(keylist, row)}
-                fp = db['name_pattern'].format(**kv)
-                if not os.path.isfile(os.path.join(db_path, fp)):
-                    log.error("File \"{0}\" is missing.".format(fp))
+                f = row[FILE_HEADER_KEYWORD]
+                if not os.path.isfile(os.path.join(db_path, f)):
+                    log.error("File \"{0}\" is missing.".format(f))
                     file_error = True
                 else:
                     n_files = n_files + 1

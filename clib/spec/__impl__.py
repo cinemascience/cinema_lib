@@ -5,6 +5,9 @@ Cinema Specification utility functions.
 from .d import SPEC_D_CSV_FILENAME
 from .a import SPEC_A_JSON_FILENAME
 from .a import get_dictionary
+from .a import get_iterator
+from .a import KEY_ARGUMENTS
+from .d import FILE_HEADER_KEYWORD
 
 import os
 import logging as log
@@ -45,17 +48,17 @@ def convert_d_to_a(db_path):
     try:
         with open(csv_fn, "w") as f:
             # get the keys and write the header
-            keylist = list(db['arguments'].keys())
+            keylist = list(db[KEY_ARGUMENTS].keys())
             for col in keylist:
                 f.write("{0},".format(col))
             f.write("FILE\n")
+            # iterate over the files
+            files = get_iterator(db)
             # Cartesian product
-            for row in product(*[i['values'] for i in 
-                               db['arguments'].values()]):
-                for col in row:
-                    f.write("{0},".format(col))
-                kv = {k: v for k, v in zip(keylist, row)}
-                f.write(db['name_pattern'].format(**kv) + '\n')
+            for row in files:
+                for col in keylist:
+                    f.write("{0},".format(row[col]))
+                f.write(row[FILE_HEADER_KEYWORD] + '\n')
     except Exception as e:
         log.error("Conversion of database failed with \"{0}\".".format(e))
         return False
