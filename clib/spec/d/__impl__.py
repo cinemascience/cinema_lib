@@ -98,7 +98,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         reader = get_iterator(db_path, csv_path)
         if reader == None:
             log.error("CSV \"{0}\" does not exist.".format(csv_path))
-            raise 
+            raise Exception("Missing file \"{0}\".".format(csv_path))
 
         # read the header
         header = next(reader)
@@ -161,12 +161,12 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                     else:
                         n_files = n_files + 1
 
+            log.info("Number of rows are {0}.".format(n_rows))
             if row_error:
-                log.warning("Only {0} files were found.".format(n_files))
+                log.error("Only {0} files were found.".format(n_files))
                 raise Exception("Error checking rows.")
             else:
                 log.info("{0} files validated to be present.".format(n_files))
-                log.info("Number of rows are {0}.".format(n_rows))
         else:
             log.info("Doing a quick check. Not checking row data.")
     except Exception as e:
