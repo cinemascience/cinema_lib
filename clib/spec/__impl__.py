@@ -7,6 +7,7 @@ from .a import SPEC_A_JSON_FILENAME
 
 import os
 import logging as log
+import json
 from itertools import product
 
 CINEMA_DATABASE_EXT = ".cdb"

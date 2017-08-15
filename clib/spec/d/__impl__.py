@@ -13,7 +13,7 @@ TYPE_INTEGER = "INTEGER"
 TYPE_FLOAT = "FLOAT"
 TYPE_STRING = "STRING"
 
-def get_csv_reader(db_path, csv_path=SPEC_D_CSV_FILENAME):
+def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """
     Return a csv reader, assuming a valid Spec D csv database.
 
@@ -24,8 +24,9 @@ def get_csv_reader(db_path, csv_path=SPEC_D_CSV_FILENAME):
             POSIX relative path to Cinema CSV
 
     returns:
-        csv.reader that is open to the Cinema CSV if the csv_path file
-        can be opened, otherwise returns None
+        an iterator that returns a list of columns per row, which
+        is open to the Cinema CSV if the csv_path file can be opened, 
+        otherwise returns None
     """
 
     reader = None
@@ -36,13 +37,13 @@ def get_csv_reader(db_path, csv_path=SPEC_D_CSV_FILENAME):
         reader = csv.reader(f, delimiter=",", doublequote=False, 
                  escapechar=None)
 
+        def wrapped(reader):
+            for row in reader:
+                yield [col.strip() for col in row]
+
+        reader = wrapped(reader)
+
     return reader
-
-def csv_next(csv_reader):
-    return [col.strip() for col in next(csv_reader)]
-
-def csv_iterator(csv_reader):
-    return ([col.strip() for col in row] for row in csv_reader)
 
 def typecheck(values):
     """
@@ -91,19 +92,19 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
     log.info("Checking database \"{0}\" as Spec D.".format(db_path))
     try:
         # get the reader
-        reader = get_csv_reader(db_path, csv_path)
+        reader = get_iterator(db_path, csv_path)
         if reader == None:
             log.error("CSV \"{0}\" does not exist.".format(csv_path))
             raise 
 
         # read the header
-        header = csv_next(reader)
+        header = next(reader)
         log.info("Header is {0}.".format(header))
         columns = len(header)
         log.info("Number of columns are {0}.".format(len(header)))
 
         # read the first line and types
-        row = csv_next(reader)
+        row = next(reader)
         log.info("First data row is {0}.".format(row))
         types = typecheck(row)
         log.info("Data types are {0}.".format(types))
@@ -112,14 +113,14 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
         log.info("FILE column indices are {0}.".format(files))
 
         # reopen the reader because we are lazy and skip the header
-        reader = get_csv_reader(db_path, csv_path)
-        csv_next(reader)
+        reader = get_iterator(db_path, csv_path)
+        next(reader)
 
         # check the rows
         row_error = False
         n_rows = 0
         n_files = 0
-        for row in csv_iterator(reader):
+        for row in reader:
             n_rows = n_rows + 1
             if len(header) != len(row):
                 log.error(
