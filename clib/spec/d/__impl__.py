@@ -95,8 +95,8 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         # get the reader
         reader = get_iterator(db_path, csv_path)
         if reader == None:
-            log.error("CSV \"{0}\" does not exist.".format(csv_path))
-            raise Exception("Missing file \"{0}\".".format(csv_path))
+            log.error("Error opening \"{0}\".".format(csv_path))
+            raise Exception("Error opening \"{0}\".".format(csv_path))
 
         # read the header
         header = next(reader)
@@ -119,18 +119,17 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                  h == FILE_HEADER_KEYWORD]
         log.info("FILE column indices are {0}.".format(files))
         if files[-1] != len(types) - 1:
-            log.error("FILE(s) are not on the last column(s).")
+            log.warning("FILE(s) are not on the last column(s).")
             header_error = True
         for i, j in zip(files[:-1], files[1:]):
             if j - i != 1:
-                log.error("FILE(s) are not on the last column(s).")
+                log.warning("FILE(s) are not on the last column(s).")
                 header_error = True
         for i in files:
             if types[i] != TYPE_STRING:
                 log.error("FILE column {0} is not string.".format(i))
                 header_error = True
-        if header_error:
-            raise Exception("Error checking header and types.")
+        # delay the raise, because we can try to check rows
 
         # check the rows if we aren't doing a quick check
         if not quick:
@@ -173,6 +172,10 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                 log.info("{0} files validated to be present.".format(n_files))
         else:
             log.info("Doing a quick check. Not checking row data.")
+
+        # raise is delayed
+        if header_error:
+            raise Exception("Error checking header and types.")
     except Exception as e:
         log.error("Check failed. \"{0}\" is invalid. {1}".format(db_path, e))
         return False
