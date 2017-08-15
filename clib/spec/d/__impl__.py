@@ -70,7 +70,7 @@ def typecheck(values):
                 types.append(TYPE_STRING)
     return types
 
-def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
+def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
     """
     Validate a Spec D database.
 
@@ -147,8 +147,8 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME):
         else:
             log.info("{0} files validated to be present.".format(n_files))
         log.info("Number of rows are {0}.".format(n_rows))
-    except:
-        log.error("Check failed. \"{0}\" is invalid.".format(db_path))
+    except Exception as e:
+        log.error("Check failed. \"{0}\" is invalid: {1}".format(db_path, e))
         return False
 
     log.info("Check succeeded.")
