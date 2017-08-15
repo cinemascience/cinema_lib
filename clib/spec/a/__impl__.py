@@ -11,6 +11,11 @@ KEY_TYPE = "type"
 KEY_VERSION = "version"
 VALUE_TYPE = "simple"
 VALUE_VERSION = "1.1"
+KEY_METADATA = "metadata"
+KEY_METADATA_TYPE = "type"
+VALUE_METADATA_TYPE = "parametric-image-stack"
+KEY_NAME_PATTERN = "name_pattern"
+KEY_ARGUMENTS = "arguments"
 
 def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
     """
@@ -83,10 +88,37 @@ def check_database(db_path, json_path=SPEC_A_JSON_FILENAME, quick=False):
                 VALUE_VERSION))
             unnkey_error = True
 
+        if KEY_METADATA not in db:
+            log.warning("\"{0}\" not in JSON.".format(KEY_METADATA))
+            unnkey_error = True
+        elif KEY_METADATA_TYPE not in db[KEY_METADATA]:
+            log.warning("\"{0}\" not in \"{1}\".".format(KEY_METADATA_TYPE,
+                KEY_METADATA))
+            unnkey_error = True
+        elif db[KEY_METADATA][KEY_METADATA_TYPE] != VALUE_METADATA_TYPE:
+            log.warning("\"{0}\":\"{1}\" is not \"{2}\".".format(
+                KEY_METADATA, KEY_METADATA_TYPE, VALUE_METADATA_TYPE))
+            unnkey_error = True
+        # delay raising these keys
+
+        # check the necessary keys
+        key_error = False
+        if KEY_NAME_PATTERN not in db:
+            log.error("\"{0}\" is not in JSON.".format(KEY_NAME_PATTERN))
+            key_error = True
+
+        if KEY_ARGUMENTS not in db:
+            log.error("\"{0}\" is not in JSON.".format(KEY_ARGUMENTS))
+            key_error = True
+
+        if key_error:
+            log.error("Error in checking the keys in \"{0}\"".format(json_path))
+            raise Exception("Key check error.")
+
         # delay raising
         if unnkey_error:
             log.error("Error in checking the keys in \"{0}\"".format(json_path))
-            raise Exception("Key check error.")
+            raise Exception("Missing meta-data (but it may work as a Spec A).")
     except Exception as e:
         log.error("Check failed. \"{0}\" is invalid. {1}".format(db_path, e))
         return False
