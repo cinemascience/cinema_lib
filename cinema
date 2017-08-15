@@ -4,10 +4,9 @@ import argparse
 import clib.spec.d as d
 import configparser
 import logging as log
-import os
 import textwrap
 
-APP_VERSION = "0.1"
+CL_VERSION = "0.1"
 
 conf_parser = argparse.ArgumentParser(
     # Turn off help, so we print all options in response to -h
@@ -25,21 +24,17 @@ parser = argparse.ArgumentParser(
     # print script description with -h/--help
     epilog=textwrap.dedent('''\
         examples:
-        
-          cinema (no args)
-            will print cinema information and exit
-
             ''')
-)
+    )
 
 # parser.set_defaults(**defaults)
 parser.add_argument("-d", "--dietrich", 
-    help="check the Cinema Spec D database")
+    help="validate a Spec D database")
 parser.add_argument("--a2d", "--astairetodietrich",
-    help="create a Spec D CSV file from a Spec A JSON")
+    help="create a Spec D database from a Spec A database")
 parser.add_argument("-v", "--verbose", action="store_true", default=False,
     help="report verbosely")
-parser.add_argument("--version", action="version", version=str(APP_VERSION))
+parser.add_argument("--version", action="version", version=str(CL_VERSION))
 
 args = parser.parse_args(remaining_argv)
 
@@ -62,10 +57,16 @@ else:
     log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', 
                     datefmt='%I:%M:%S')
 
+# check dietrich
 if args.dietrich is not None:
     if not d.check_database(args.dietrich):
         exit(True)
 
-if args.a2d is not None:
+# convert A to D
+elif args.a2d is not None:
     if not d.convert_from_spec_a(args.a2d):
         exit(True)
+
+# print help
+else:
+    parser.print_help()
