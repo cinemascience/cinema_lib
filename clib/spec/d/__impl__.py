@@ -148,7 +148,9 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                       "Unequal number of columns on row #{0}.".format(n_rows))
                     row_error = True
                 if not reduce(lambda x, y: x and y, 
-                              [a == b for a, b in zip(typecheck(row), types)],
+                              [a == b or 
+                                  (a.lower() == "nan" and b == TYPE_STRING)
+                                  for a, b in zip(typecheck(row), types)],
                               True):
                   log.error("Types do not match on row #{0}:".format(n_rows))
                   row_error = True
