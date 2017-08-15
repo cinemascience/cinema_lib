@@ -15,7 +15,8 @@ TYPE_STRING = "STRING"
 
 def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
     """
-    Return a row iterator, assuming a valid Spec D csv database.
+    Return a row iterator, assuming a valid Spec A database. Does
+    not validate that it is a proper Spec D database. 
 
     arguments:
         db_path : string
@@ -106,13 +107,28 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         log.info("Number of columns are {0}.".format(len(header)))
 
         # read the first line and types
+        header_error = False
         row = next(reader)
         log.info("First data row is {0}.".format(row))
         types = typecheck(row)
         log.info("Data types are {0}.".format(types))
+        # check FILE
         files = [i for i, t, h in zip(range(0, len(types)), types, header) if
-                 h == FILE_HEADER_KEYWORD and t == TYPE_STRING]
+                 h == FILE_HEADER_KEYWORD]
         log.info("FILE column indices are {0}.".format(files))
+        if files[-1] != len(types) - 1:
+            log.error("FILE(s) are not on the last column(s).")
+            header_error = True
+        for i, j in zip(files[:-1], files[1:]):
+            if j - i != 1:
+                log.error("FILE(s) are not on the last column(s).")
+                header_error = True
+        for i in files:
+            if types[i] != TYPE_STRING:
+                log.error("FILE column {0} is not string.".format(i))
+                header_error = True
+        if header_error:
+            raise Exception("Error checking FILE and types.")
 
         # check the rows if we aren't doing a quick check
         if not quick:
@@ -147,14 +163,14 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
 
             if row_error:
                 log.warning("Only {0} files were found.".format(n_files))
-                raise
+                raise Exception("Error checking rows.")
             else:
                 log.info("{0} files validated to be present.".format(n_files))
                 log.info("Number of rows are {0}.".format(n_rows))
         else:
             log.info("Doing a quick check. Not checking row data.")
     except Exception as e:
-        log.error("Check failed. \"{0}\" is invalid: {1}".format(db_path, e))
+        log.error("Check failed. \"{0}\" is invalid. {1}".format(db_path, e))
         return False
 
     log.info("Check succeeded.")
