@@ -252,7 +252,9 @@ def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
         if len(files) > 0:
             log.info(
                 "More than one FILE, so numbers will be appended to FILE.")
-            for i in files:
+            header = list(header)
+            for i, n in zip(files, range(0, len(files))):
+                header[i] = header[i] + str(n)
 
         # figure out the table name
         name = os.path.splitext(os.path.basename(os.path.dirname(db_path)))[0]
@@ -272,6 +274,7 @@ def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
         log.info("Insert string is \"{0}\".".format(insert))
         cursor.execute(insert, first)
         cursor.executemany(insert, cdb)
+        db.commit()
 
         # done!
         log.info("Insertion of data into \"{0}\" was successful.".format(name))

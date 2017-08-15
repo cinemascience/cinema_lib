@@ -7,6 +7,7 @@ import clib.spec.d as d
 import configparser
 import logging as log
 import textwrap
+import os
 
 CL_VERSION = "0.2.2"
 
@@ -37,7 +38,7 @@ parser.add_argument("-d", "--dietrich",
 parser.add_argument("--a2d", "--astairetodietrich",
     help="create a Spec D database from a Spec A database, in place")
 parser.add_argument("--d2s", "--dietrichtosqlite",
-    help="create a SQLite3 database from a Spec D database")
+    help="create a SQLite3 database from a Spec D database, to ./<database_name>.db")
 parser.add_argument("-v", "--verbose", action="store_true", default=False,
     help="report verbosely")
 parser.add_argument("-q", "--quick", action="store_true", default=False,
@@ -72,7 +73,8 @@ elif args.a2d is not None:
         exit(True)
 
 elif args.d2s is not None:
-    if d.get_sqlite3(args.d2s) == None:
+    if d.get_sqlite3(args.d2s, where=os.path.splitext(
+          os.path.basename(os.path.dirname(args.d2s)))[0] + ".db") == None:
         exit(True)
 
 # print help
