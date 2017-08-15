@@ -26,8 +26,8 @@ KEY_ARG_VALUES = "values"
 
 def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
     """
-    Return a JSON dictionary, assuming a valid Spec A database. Does
-    not validate that it is a proper Spec A database. 
+    Get the dictionary for the json_path in the Cinema Spec A database.
+    Does not validate that the database is a valid Spec A JSON file.
 
     arguments:
         db_path : string
@@ -36,8 +36,7 @@ def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
             POSIX relative path to Cinema JSON 
 
     returns:
-        a dictionary of the contents of the Cinema JSON if the file can
-        be opened, otherwise returns None
+        a dictionary with the contents of a Spec A JSON
     """
 
     json_fn = os.path.join(db_path, json_path)
@@ -50,29 +49,42 @@ def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
     except:
         return None
 
-def get_iterator(db):
+def get_iterator(db_path, json_path=SPEC_A_JSON_FILENAME):
     """
-    Return a iterator for a list of files assuming a valid Spec A dictionary.
-    Does not validate that it is a proper Spec A database. 
+    Return a row iterator, assuming a valid Spec A database. Does
+    not validate that it is a proper Spec A database. 
+
+    This transforms the Spec A JSON into a row style (table style) iterator,
+    which mirrors the Spec D iterator. That is the data are turned into
+    columns and rows. The first row will be the "argument" to "column"
+    mapping, i.e., the header identifiers will be argument names.
 
     arguments:
-        db : dictionary 
-            a dictionary of Spec A data
+        db_path : string
+            POSIX path to Cinema database
+        json_path : string = SPEC_A_JSON_FILENAME
+            POSIX relative path to Cinema JSON 
 
     returns:
-        an iterator that returns dictionaries for the contents of the Cinema 
-        JSON if the file can be opened, otherwise returns None
+        an iterator that returns a tuple of data per row if the json_path 
+        file can be opened, otherwise returns None
 
-        each element is a dictionary of arguments and FILE
+        the first row will be the header (column identifiers), which are
+        the arguments in the JSON file. The last column, will be FILE,
+        i.e., the list of files.
     """
+    db = get_dictionary(db_path, json_path)
+    if db == None:
+        return None
+
     try:
-        keylist = list(db[KEY_ARGUMENTS].keys())
+        keylist = tuple(db[KEY_ARGUMENTS].keys())
         def filelist():
+            yield keylist + (FILE_HEADER_KEYWORD,)
             for row in product(*[k[KEY_ARG_VALUES] for k in 
                            db[KEY_ARGUMENTS].values()]):
                 kv = {k: v for k, v in zip(keylist, row)}
-                kv[FILE_HEADER_KEYWORD] = db[KEY_NAME_PATTERN].format(**kv)
-                yield kv
+                yield row + (db[KEY_NAME_PATTERN].format(**kv),)
         return filelist()
     except:
         return None
@@ -189,12 +201,12 @@ def check_database(db_path, json_path=SPEC_A_JSON_FILENAME, quick=False):
         if not quick:
             n_files = 0
             total_files = 0
-            files = get_iterator(db)
+            files = get_iterator(db_path, json_path)
+            next(files)
             for row in files:
                 total_files = total_files + 1
-                f = row[FILE_HEADER_KEYWORD]
-                if not os.path.isfile(os.path.join(db_path, f)):
-                    log.error("File \"{0}\" is missing.".format(f))
+                if not os.path.isfile(os.path.join(db_path, row[-1])):
+                    log.error("File \"{0}\" is missing.".format(row[-1]))
                     file_error = True
                 else:
                     n_files = n_files + 1
