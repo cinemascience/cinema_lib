@@ -9,7 +9,7 @@ import logging as log
 import textwrap
 import os
 
-CL_VERSION = "0.3"
+CL_VERSION = "0.3.1"
 
 conf_parser = argparse.ArgumentParser(
     # Turn off help, so we print all options in response to -h
