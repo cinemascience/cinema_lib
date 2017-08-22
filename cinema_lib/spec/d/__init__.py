@@ -37,23 +37,19 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
         the first row will be the header (column identifiers)
     """
 
-    reader = None
     fn = os.path.join(db_path, csv_path)
-
     if os.path.isfile(fn):
-        f = open(fn, "r") 
-        reader = csv.reader(f, delimiter=",", doublequote=False, 
-                     escapechar=None)
+        def wrapped(fn):
+            with open(fn, "r") as f:
+                reader = csv.reader(f, delimiter=",", doublequote=False, 
+                                    escapechar=None)
+                for row in reader:
+                    yield tuple([col.strip() for col in row])
+        return wrapped(fn)
+    else:
+        return None
 
-        def wrapped(reader):
-            for row in reader:
-                yield tuple([col.strip() for col in row])
-
-        reader = wrapped(reader)
-
-    return reader
-
-def typecheck(values):
+def typecheck(values, nans=[]):
     """
     Return a tuple of Spec D types given an iterator of strings.
 
@@ -76,6 +72,41 @@ def typecheck(values):
             except:
                 types.append(TYPE_STRING)
     return tuple(types)
+
+def typematch(row, types):
+    """
+    Given a row, will determine if the types match the header types,
+    accounting for NaNs. In particular, it will allow NaN to be OK
+    for both TYPE_STRING and TYPE_FLOAT.
+
+    arguments:
+        row : iterator of values
+
+        header : iterator of types (TYPE_INTEGER, TYPE_FLOAT, or TYPE_STRING)
+
+    returns:
+        True if the types match, False if not
+    """
+    return reduce(lambda x, y: x and y, 
+                  [t == h or (v.lower() == "nan" and h == TYPE_STRING)
+                   for v, t, h in zip(row, typecheck(row), types)],
+                  True)
+
+def file_columns(header):
+    """
+    Given a header row, return the list of FILE column indices. Does
+    not validate that they are in the right order, nor does it validate
+    rows if they are strings or files.
+
+    arguments:
+        row : iterator of header identifiers
+
+    returns:
+        tuple of column indices that are FILEs
+    """
+
+    return [i for i, h in zip(range(0, len(header)), header) if
+            h == FILE_HEADER_KEYWORD]
 
 def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
     """
@@ -110,9 +141,14 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         log.info("Header is {0}.".format(header))
         columns = len(header)
         log.info("Number of columns are {0}.".format(len(header)))
+        types = typecheck(header)
+        header_error = reduce(lambda x, y: x or (y != TYPE_STRING), 
+                              types, False)
+        if header_error:
+            log.error("Column header(s) are not all type string: {0}.".format(
+                      types))
 
         # read the first line and types
-        header_error = False
         row = next(reader)
         log.info("First data row is {0}.".format(row))
         types = typecheck(row)
@@ -122,20 +158,24 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                 "Number of columns in header and first row do not match.")
             header_error = True
         # check FILE
-        files = [i for i, t, h in zip(range(0, len(types)), types, header) if
-                 h == FILE_HEADER_KEYWORD]
+        files = file_columns(header)
         log.info("FILE column indices are {0}.".format(files))
-        if files[-1] != len(types) - 1:
-            log.warning("FILE(s) are not on the last column(s).")
-            header_error = True
-        for i, j in zip(files[:-1], files[1:]):
-            if j - i != 1:
-                log.warning("FILE(s) are not on the last column(s).")
+        if len(files) > 0:
+            for i in files:
+                if types[i] != TYPE_STRING:
+                    log.error("FILE column {0} is not string.".format(i))
+                    header_error = True
+            if files[-1] != len(row) -1:
+                log.error(
+                    "FILE on column #{0} is not on the last column.".format(
+                        files[-1]))
                 header_error = True
-        for i in files:
-            if types[i] != TYPE_STRING:
-                log.error("FILE column {0} is not string.".format(i))
-                header_error = True
+            for i, j in zip(files[:-1], files[1:]):
+                if j - i != 1:
+                    log.error(
+                    "FILE on column #{0} is not sequentially last.".format(
+                        i))
+                    header_error = True
         # delay the raise, because we can try to check rows
 
         # check the rows if we aren't doing a quick check
@@ -151,24 +191,20 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
             for row in reader:
                 n_rows = n_rows + 1
                 if len(header) != len(row):
-                    log.error(
-                      "Unequal number of columns on row #{0}.".format(n_rows))
+                    log.error("Error on row #{0}: {1}".format(n_rows, row)) 
+                    log.error("Unequal number of columns.")
                     row_error = True
-                if not reduce(lambda x, y: x and y, 
-                              [a == b or 
-                                  (a.lower() == "nan" and b == TYPE_STRING)
-                                  for a, b in zip(typecheck(row), types)],
-                              True):
-                  log.error("Types do not match on row #{0}:".format(n_rows))
-                  row_error = True
+                if not typematch(row, types):
+                    log.error("Error on row #{0}: {1}".format(n_rows, row)) 
+                    log.error("Types do not match: {0}".format(typecheck(row)))
+                    row_error = True
                 # check the files
                 for i in files:
                     total_files = total_files + 1
                     fn = os.path.join(db_path, row[i])
-                    if not os.path.exists(fn):
-                        log.error(
-                          "File \"{0}\" on row #{1} is missing.".format(fn, 
-                              n_rows))
+                    if not os.path.isfile(fn):
+                        log.error("Error on row #{0}: {1}".format(n_rows, row)) 
+                        log.error("File \"{0}\" is missing.".format(fn))
                         row_error = True
                     else:
                         n_files = n_files + 1
@@ -247,8 +283,7 @@ def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
 
         # determine if we have more than one FILE
         # and adjust names
-        files = [i for i, t, h in zip(range(0, len(types)), types, header) if
-                 h == FILE_HEADER_KEYWORD]
+        files = file_columns(header)
         if len(files) > 0:
             log.info(
                 "More than one FILE, so numbers will be appended to FILE.")
@@ -257,7 +292,7 @@ def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
                 header[i] = header[i] + str(n)
 
         # figure out the table name
-        name = os.path.splitext(os.path.basename(os.path.dirname(db_path)))[0]
+        name = os.path.splitext(os.path.basename(db_path))[0]
         log.info("Table name is \"{0}\".".format(name))
 
         # create the table

@@ -2,7 +2,7 @@
 Specification A functions and utilities for reading and validating databases.
 """
 
-from ..d import FILE_HEADER_KEYWORD
+from ...spec import d 
 
 import json
 import os
@@ -41,7 +41,7 @@ def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
 
     json_fn = os.path.join(db_path, json_path)
     if not os.path.exists(json_fn):
-        return False
+        return None
    
     try:
         with open(json_fn) as jf:
@@ -80,7 +80,7 @@ def get_iterator(db_path, json_path=SPEC_A_JSON_FILENAME):
     try:
         keylist = tuple(db[KEY_ARGUMENTS].keys())
         def filelist():
-            yield keylist + (FILE_HEADER_KEYWORD,)
+            yield keylist + (d.FILE_HEADER_KEYWORD,)
             for row in product(*[k[KEY_ARG_VALUES] for k in 
                            db[KEY_ARGUMENTS].values()]):
                 kv = {k: v for k, v in zip(keylist, row)}
@@ -214,6 +214,7 @@ def check_database(db_path, json_path=SPEC_A_JSON_FILENAME, quick=False):
             if n_files != total_files:
                 log.error("Only {0} files out of {1} were found.".format(
                     n_files, total_files))
+                raise Exception("Files were missing from the database.")
             else:
                 log.info("{0} files validated to be present.".format(n_files))
         else:

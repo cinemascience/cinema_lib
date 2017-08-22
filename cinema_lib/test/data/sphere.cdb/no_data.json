@@ -1,0 +1,20 @@
+{
+  "arguments": {
+    "theta": {
+      "default": 0, 
+      "type": "range", 
+      "label": "theta"
+    }, 
+    "phi": {
+      "default": 0, 
+      "type": "range", 
+      "label": "phi"
+    }
+  }, 
+  "name_pattern": "{phi}/{theta}.png", 
+  "metadata": {
+    "type": "parametric-image-stack"
+  },
+  "type": "simple",
+  "version": "1.1"
+}
