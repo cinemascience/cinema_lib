@@ -8,7 +8,7 @@ To install after cloning from github:
 ```
 $ git clone cinema_lib
 $ cd cinema_lib
-$ pip install -e .
+$ pip install .
 ```
 
 Current requirements are:
