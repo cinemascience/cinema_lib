@@ -13,7 +13,7 @@ import inspect
 import tempfile as temp
 import shutil as sh
         
-TEST_PATH = "cinemalib/test/data"
+TEST_PATH = "cinema_lib/test/data"
 
 def unittest_verbosity():
     frame = inspect.currentframe()
