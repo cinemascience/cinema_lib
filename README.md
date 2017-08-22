@@ -4,10 +4,17 @@
 database (currently Spec A and Spec D) through Python and the command line
 tool, *cinema*.
 
-To install after cloning from github:
+To run the command line tool directly from the repository:
 ```
-$ git clone cinema_lib
-$ cd cinema_lib
+$ git clone <cinema_lib>
+$ cd <cinema_lib>
+$ ./cinema
+```
+
+To install with *pip* after cloning:
+```
+$ git clone <cinema_lib>
+$ cd <cinema_lib>
 $ pip install .
 ```
 
