@@ -1,8 +1,15 @@
-*Cinema* clib
+*Cinema* library (*cinema_lib*)
 
-*clib* is a set of tools and library for interacting with a Cinema database 
-(currently Spec A and Spec D) through Python and the command line (Python3
-shell script).
+*cinema_lib* is a set of tools and library for interacting with a Cinema 
+database (currently Spec A and Spec D) through Python and the command line
+tool, *cinema*.
+
+To install after cloning from github:
+```
+$ git clone cinema_lib
+$ cd cinema_lib
+$ pip install .
+```
 
 Current requirements are:
 - Python 3

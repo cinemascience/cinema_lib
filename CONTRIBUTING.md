@@ -1,4 +1,4 @@
-Current set of rules for contributing to Cinema clib:
+Current set of rules for contributing to cinema_lib:
 
 1. Don’t check/push into *master* – it is supposed to be a stable branch for 
    people to use. *devel* is the branch to push code changes into.

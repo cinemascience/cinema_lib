@@ -1,0 +1,22 @@
+{
+  "arguments": {
+    "theta": {
+      "default": 0, 
+      "values": [0], 
+      "type": "range", 
+      "label": "theta"
+    }, 
+    "phi": {
+      "default": 0, 
+      "values": [-180, -162, -144, -126, -108, -90, -72, -54, -36, -18, 0, 18, 36, 54, 72, 90, 108, 126, 144, 162], 
+      "type": "range", 
+      "label": "phi"
+    }
+  }, 
+  "name_pattern": "{phi}/{theta}.png", 
+  "metadata": {
+    "type": "parametric-image-stack"
+  },
+  "type": "simple",
+  "version": "1.1"
+}
