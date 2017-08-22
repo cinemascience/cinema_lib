@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import unittest 
 from cinema_lib import version
 
@@ -19,5 +19,5 @@ setup(name='cinema_lib',
       entry_points={
           'console_scripts': ['cinema = cinema_lib.cl:main']
           },
-      packages=['cinema_lib']
+      packages=find_packages(exclude=["test"])
       )
