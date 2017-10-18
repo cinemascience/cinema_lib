@@ -71,7 +71,7 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
         else:
             def __wrapped(fn):
                 with open(fn, "r") as f:
-                    for row in csv.reader(f, strict=True):
+                    for row in csv.reader(f):
                         yield tuple(row)
             wrapped = __wrapped
         return wrapped(fn)
