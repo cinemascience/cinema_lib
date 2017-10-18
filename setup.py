@@ -1,4 +1,11 @@
-from setuptools import setup, find_packages
+import sys
+
+try:
+    from setuptools import setup, find_packages
+except Exception as e:
+    print("cinema_lib requires Python 3.6. Exiting.")
+    sys.exit()
+
 import unittest 
 from cinema_lib import version
 
@@ -19,5 +26,6 @@ setup(name='cinema_lib',
       entry_points={
           'console_scripts': ['cinema = cinema_lib.cl:main']
           },
-      packages=find_packages(exclude=["test"])
+      packages=find_packages(exclude=["test"]),
+      python_requires="~=3.6"
       )

@@ -23,7 +23,8 @@ CDB_TO_SQLITE3 = {
 # EXCEPT it won't detect a " after comma and white-space. This checks it.
 def __python_rfc_4180_bug_check(row):
     for col in row:
-        if col != col.strip() and col.strip()[0] == '"':
+        s = col.strip()
+        if len(s) > 0 and col != s and s[0] == '"':
             return True
     return False
 
