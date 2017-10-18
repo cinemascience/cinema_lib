@@ -56,10 +56,10 @@ def main():
     # log.info, log.warning, log.error
     if (args.verbose):
         log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', 
-                        level=log.DEBUG, datefmt='%I:%M:%S')
+                        level=log.INFO, datefmt='%I:%M:%S')
     else:
         log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', 
-                        datefmt='%I:%M:%S')
+                        level=log.WARNING, datefmt='%I:%M:%S')
 
     # check astaire 
     if args.astaire is not None:

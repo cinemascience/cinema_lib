@@ -28,6 +28,7 @@ def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
     """
     Get the dictionary for the json_path in the Cinema Spec A database.
     Does not validate that the database is a valid Spec A JSON file.
+    If it is unable to open the JSON or parse it, it will return None.
 
     arguments:
         db_path : string
@@ -36,7 +37,7 @@ def get_dictionary(db_path, json_path=SPEC_A_JSON_FILENAME):
             POSIX relative path to Cinema JSON 
 
     returns:
-        a dictionary with the contents of a Spec A JSON
+        a dictionary with the contents of a Spec A JSON or None
     """
 
     json_fn = os.path.join(db_path, json_path)
@@ -112,6 +113,7 @@ def check_database(db_path, json_path=SPEC_A_JSON_FILENAME, quick=False):
     log.info("Checking database \"{0}\" as Spec A.".format(db_path))
 
     try:
+        log.info("Opening JSON file \"{0}\".".format(json_path))
         db = get_dictionary(db_path, json_path)
         if db == None:
             log.error("Error opening \"{0}\".".format(json_path))

@@ -186,6 +186,34 @@ class SpecD(unittest.TestCase):
     def test_sphere_no_header(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "no_header.csv"))
 
+    def test_sphere_whitespace(self):
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "whitespace.csv"))
+
+    def test_sphere_whitespace_file(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "whitespace_file.csv"))
+
+    def test_sphere_proper_quoted(self):
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "proper_quoted.csv"))
+
+    def test_sphere_improper_quoted_header(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_header.csv"))
+
+    def test_sphere_improper_quoted_row_1(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_1.csv"))
+
+    def test_sphere_improper_quoted_row_2(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_2.csv"))
+
+    def test_sphere_improper_quoted_header_alt(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_header_alt.csv"))
+
+    def test_sphere_improper_quoted_row_1_alt(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_1_alt.csv"))
+
+    def test_sphere_improper_quoted_row_2_alt(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_2_alt.csv"))
+
+
 class Convert(unittest.TestCase):
     """
     Conversion tests for the clib.spec module.

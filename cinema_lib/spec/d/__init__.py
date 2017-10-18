@@ -19,32 +19,61 @@ CDB_TO_SQLITE3 = {
     TYPE_STRING: "TEXT"
     }
 
-def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME):
+# The python CSV reader mostly does RFC-4180 correctly on strict mode
+# EXCEPT it won't detect a " after comma and white-space. This checks it.
+def __python_rfc_4180_bug_check(row):
+    for col in row:
+        if col != col.strip() and col.strip()[0] == '"':
+            return True
+    return False
+
+def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
     """
     Return a row iterator, assuming a valid Spec D database. Does
-    not validate that it is a proper Spec D database. 
+    not validate that it is a proper Spec D database, unless *strict*
+    is *True*. The CSV file must adhere to RFC-4180 for proper 
+    interpretation.
 
     arguments:
         db_path : string
             POSIX path to Cinema database
         csv_path : string = SPEC_D_CSV_FILENAME
             POSIX relative path to Cinema CSV
+        strict : boolean = False
+            enable strict checking mode, and raise an error if it
+            does not match RFC-4180
 
     returns:
         an iterator that returns a tuple of data per row if the csv_path 
         file can be opened, otherwise returns None
 
         the first row will be the header (column identifiers)
+
+    raises:
+        an error during iteration if the file does not match the
+        RFC-4180 specification
     """
 
     fn = os.path.join(db_path, csv_path)
     if os.path.isfile(fn):
-        def wrapped(fn):
-            with open(fn, "r") as f:
-                reader = csv.reader(f, delimiter=",", doublequote=False, 
-                                    escapechar=None)
-                for row in reader:
-                    yield tuple([col.strip() for col in row])
+        # by default the Python CSV reader implements RFC-4180
+        # with the exception that it doesn't detect double-quote after
+        # comma and white-space (which is an error according to the spec)
+        wrapped = None
+        if strict:
+            def __wrapped(fn):
+                with open(fn, "r") as f:
+                    for row in csv.reader(f, strict=True):
+                        if __python_rfc_4180_bug_check(row):
+                            raise Exception("Unescaped double-quote appears after comma and white-space.")
+                        yield tuple(row)
+            wrapped = __wrapped
+        else:
+            def __wrapped(fn):
+                with open(fn, "r") as f:
+                    for row in csv.reader(f, strict=True):
+                        yield tuple(row)
+            wrapped = __wrapped
         return wrapped(fn)
     else:
         return None
@@ -108,6 +137,7 @@ def file_columns(header):
     return [i for i, h in zip(range(0, len(header)), header) if
             h == FILE_HEADER_KEYWORD]
 
+
 def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
     """
     Validate a Spec D database.
@@ -131,25 +161,55 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
     log.info("Checking database \"{0}\" as Spec D.".format(db_path))
     try:
         # get the reader
-        reader = get_iterator(db_path, csv_path)
+        log.info("Opening CSV file \"{0}\".".format(csv_path))
+        reader = get_iterator(db_path, csv_path, True)
         if reader == None:
             log.error("Error opening \"{0}\".".format(csv_path))
             raise Exception("Error opening \"{0}\".".format(csv_path))
 
         # read the header
-        header = next(reader)
+        try:
+            header = next(reader)
+        except Exception as e:
+            log.error("Fatal error parsing header.")
+            raise e
+
         log.info("Header is {0}.".format(header))
         columns = len(header)
         log.info("Number of columns are {0}.".format(len(header)))
         types = typecheck(header)
+
+        # check the types of the first line
         header_error = reduce(lambda x, y: x or (y != TYPE_STRING), 
                               types, False)
         if header_error:
             log.error("Column header(s) are not all type string: {0}.".format(
                       types))
 
+        # check if there is whitespace
+        warn_whitespace = reduce(lambda x, y: x or (y[0] != y[1]),
+                                 zip(header, [i.strip() for i in header]),
+                                 False)
+        if warn_whitespace:
+            log.warning(
+              "There are whitespace(s) preceeding or following a comma(s) in the header: {0}.".format(header))
+
+        # check if there is FILE with whitespace
+        warn_file_whitespace = reduce(lambda x, y: x or 
+                                      ((y[1] == "FILE") and (y[0] != y[1])),
+                                      zip(header, [i.strip() for i in header]),
+                                      False)
+        if warn_file_whitespace:
+            log.warning(
+              "There are whitespace(s) for FILE column(s) in the header. These will not be detected as proper FILEs: {0}.".format(header))
+
         # read the first line and types
-        row = next(reader)
+        try:
+            row = next(reader)
+        except Exception as e:
+            log.error("Fatal error parsing first data row.")
+            raise e
+
         log.info("First data row is {0}.".format(row))
         types = typecheck(row)
         log.info("Data types are {0}.".format(types))
@@ -157,6 +217,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
             log.error(
                 "Number of columns in header and first row do not match.")
             header_error = True
+
         # check FILE
         files = file_columns(header)
         log.info("FILE column indices are {0}.".format(files))
@@ -181,33 +242,48 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         # check the rows if we aren't doing a quick check
         if not quick:
             # reopen the reader because we are lazy and skip the header
-            reader = get_iterator(db_path, csv_path)
+            reader = get_iterator(db_path, csv_path, True)
             next(reader)
 
             row_error = False
-            n_rows = 0
+            n_rows = 1
             n_files = 0
             total_files = 0
-            for row in reader:
-                n_rows = n_rows + 1
-                if len(header) != len(row):
-                    log.error("Error on row #{0}: {1}".format(n_rows, row)) 
-                    log.error("Unequal number of columns.")
-                    row_error = True
-                if not typematch(row, types):
-                    log.error("Error on row #{0}: {1}".format(n_rows, row)) 
-                    log.error("Types do not match: {0}".format(typecheck(row)))
-                    row_error = True
-                # check the files
-                for i in files:
-                    total_files = total_files + 1
-                    fn = os.path.join(db_path, row[i])
-                    if not os.path.isfile(fn):
-                        log.error("Error on row #{0}: {1}".format(n_rows, row)) 
-                        log.error("File \"{0}\" is missing.".format(fn))
+            try:
+                for row in reader:
+                    if len(header) != len(row):
+                        log.error("On row #{0}: {1}".format(n_rows, row)) 
+                        log.error("Unequal number of columns.")
                         row_error = True
-                    else:
-                        n_files = n_files + 1
+                    if not typematch(row, types):
+                        log.error("On row #{0}: {1}".format(n_rows, row)) 
+                        log.error("Types do not match: {0}".format(typecheck(row)))
+                        row_error = True
+
+                    # check if there is whitespace
+                    warn_whitespace = reduce(lambda x, y: x or (y[0] != y[1]),
+                                             zip(row, 
+                                                 [i.strip() for i in row]),
+                                             False)
+                    if warn_whitespace:
+                        log.warning("On row #{0}: {1}".format(n_rows, row))
+                        log.warning("There are whitespace(s) preceeding or following a comma(s).")
+
+                    # check the files
+                    for i in files:
+                        total_files = total_files + 1
+                        fn = os.path.join(db_path, row[i])
+                        if not os.path.isfile(fn):
+                            log.error("Error on row #{0}: {1}".format(n_rows, row)) 
+                            log.error("File \"{0}\" is missing.".format(fn))
+                            row_error = True
+                        else:
+                            n_files = n_files + 1
+                    # increment
+                    n_rows = n_rows + 1
+            except Exception as e:
+                log.error("Fatal error parsing row #{0}.".format(n_rows))
+                raise e
 
             log.info("Number of rows are {0}.".format(n_rows))
             if n_files != total_files:

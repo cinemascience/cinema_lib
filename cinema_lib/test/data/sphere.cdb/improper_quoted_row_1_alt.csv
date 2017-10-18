@@ -1,0 +1,4 @@
+"""theta""","""phi""",foobar,"FILE"
+ 0 , -180, "foobar","-180/0.png"
+0 , -162,foo,"-162/0.png"
+ 0,-144 ,bar,"-144/0.png"
