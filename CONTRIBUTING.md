@@ -16,10 +16,9 @@ Current set of rules for contributing to cinema_lib:
 5. If there is a major bug in *master* and it can’t wait – create a bug fix
    branch off of *master*, test it on *master* and *devel*, and we’ll update
    (merge into) both branches simultaneously.
-6. Regression tests (unit tests) will be required. They’re not in there, as of
-   this writing, but we are going to require regression testing (i.e., unit
-   tests). It’s on my very next TODO so it doesn’t get thrown by the way side,
-   because we need to do CI (continuous integration).
+6. Regression tests (unit tests) will be required for any new code (i.e., unit
+   tests). We haven't added CI (continuous integration) as of this writing,
+   but it is planned.
 7. Writing Python help (a long string at the entry point of any function,
    class, or module, i.e., “””this is a long string”””) will be required to
    document it. Right now, I’m not focusing on a documentation tool or making

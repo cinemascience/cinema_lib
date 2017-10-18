@@ -10,4 +10,4 @@ The various submodules are:
 """
 
 def version():
-    return "0.5.2"
+    return "0.5.2.1"

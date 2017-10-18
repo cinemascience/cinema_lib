@@ -19,7 +19,7 @@ $ pip install .
 ```
 
 Current requirements are:
-- Python 3
+- Python 3.6
 
 Current capabilities:
 - Validate a Spec A database
