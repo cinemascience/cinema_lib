@@ -1,28 +1,38 @@
 *Cinema* library (*cinema_lib*)
 
 *cinema_lib* is a set of tools and library for interacting with a Cinema 
-database (currently Spec A and Spec D) through Python and the command line
+database (currently Spec A and Spec D) through Python and the command line 
 tool, *cinema*.
 
-To run the command line tool directly from the repository:
+To run the command line tool directly from the repository, after cloning:
 ```
-$ git clone <cinema_lib>
+$ git clone <cinema_lib_git_path>
 $ cd <cinema_lib>
 $ ./cinema
 ```
 
 To install with *pip* after cloning:
 ```
-$ git clone <cinema_lib>
+$ git clone <cinema_lib_git_path>
 $ cd <cinema_lib>
 $ pip install .
+$ cinema
 ```
 
-Current requirements are:
+Minimum requirements are:
 - Python 3.6
+
+Optional requirements are:
+- Scikit-Image 
+  - image capabilities
+- numpy
+  - image capabilities
 
 Current capabilities:
 - Validate a Spec A database
 - Validate a Spec D database
 - Convert Spec A to Spec D
 - Convert Spec D to SQLite
+- If Scikit-Image and numpy are installed:
+  - image mean
+  - convert image to greyscale 

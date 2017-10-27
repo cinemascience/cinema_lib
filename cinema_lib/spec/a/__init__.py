@@ -60,6 +60,8 @@ def get_iterator(db_path, json_path=SPEC_A_JSON_FILENAME):
     columns and rows. The first row will be the "argument" to "column"
     mapping, i.e., the header identifiers will be argument names.
 
+    Column order is determined by sorting the dimensions (parameters).
+
     arguments:
         db_path : string
             POSIX path to Cinema database
@@ -79,11 +81,11 @@ def get_iterator(db_path, json_path=SPEC_A_JSON_FILENAME):
         return None
 
     try:
-        keylist = tuple(db[KEY_ARGUMENTS].keys())
+        keylist = tuple(sorted(db[KEY_ARGUMENTS].keys()))
         def filelist():
             yield keylist + (d.FILE_HEADER_KEYWORD,)
-            for row in product(*[k[KEY_ARG_VALUES] for k in 
-                           db[KEY_ARGUMENTS].values()]):
+            for row in product(*[db[KEY_ARGUMENTS][k][KEY_ARG_VALUES] 
+                                 for k in keylist]):
                 kv = {k: v for k, v in zip(keylist, row)}
                 yield row + (db[KEY_NAME_PATTERN].format(**kv),)
         return filelist()

@@ -7,6 +7,8 @@ import os
 import logging as log
 import csv
 from functools import reduce
+import hashlib
+import time
 
 SPEC_D_CSV_FILENAME = "data.csv"
 FILE_HEADER_KEYWORD = "FILE"
@@ -33,7 +35,8 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
     Return a row iterator, assuming a valid Spec D database. Does
     not validate that it is a proper Spec D database, unless *strict*
     is *True*. The CSV file must adhere to RFC-4180 for proper 
-    interpretation.
+    interpretation. If *strict* is True, it will raise an Exception on 
+    parsing errors.
 
     arguments:
         db_path : string
@@ -51,8 +54,11 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
         the first row will be the header (column identifiers)
 
     raises:
-        an error during iteration if the file does not match the
+        an exception during iteration if the file does not match the
         RFC-4180 specification
+
+    TODO:
+        properly type the exception as the same exception that csv.reader uses
     """
 
     fn = os.path.join(db_path, csv_path)
@@ -197,7 +203,8 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
 
         # check if there is FILE with whitespace
         warn_file_whitespace = reduce(lambda x, y: x or 
-                                      ((y[1] == "FILE") and (y[0] != y[1])),
+                                      ((y[1] == FILE_HEADER_KEYWORD) and 
+                                       (y[0] != y[1])),
                                       zip(header, [i.strip() for i in header]),
                                       False)
         if warn_file_whitespace:
@@ -224,10 +231,13 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         log.info("FILE column indices are {0}.".format(files))
         if len(files) > 0:
             for i in files:
-                if types[i] != TYPE_STRING:
+                if i >= len(types):
+                    log.error("FILE column #{0} is greater than the number of data columns {1} on row #1.".format(i, len(types)))
+                    header_error = True
+                elif types[i] != TYPE_STRING:
                     log.error("FILE column {0} is not string.".format(i))
                     header_error = True
-            if files[-1] != len(row) -1:
+            if files[-1] != len(row) - 1:
                 log.error(
                     "FILE on column #{0} is not on the last column.".format(
                         files[-1]))
@@ -272,21 +282,25 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
 
                     # check the files
                     for i in files:
-                        total_files = total_files + 1
-                        fn = os.path.join(db_path, row[i])
-                        if not os.path.isfile(fn):
-                            log.error("Error on row #{0}: {1}".format(n_rows, row)) 
-                            log.error("File \"{0}\" is missing.".format(fn))
-                            row_error = True
+                        if i < len(row):
+                            total_files = total_files + 1
+                            fn = os.path.join(db_path, row[i])
+                            if not os.path.isfile(fn):
+                                log.error("Error on row #{0}: {1}".format(n_rows, row)) 
+                                log.error("File \"{0}\" is missing.".format(fn))
+                                row_error = True
+                            else:
+                                n_files = n_files + 1
                         else:
-                            n_files = n_files + 1
+                            log.error("Unable to check file on row #{0}, not enough columns.".format(n_rows))
+                            row_error = True
                     # increment
                     n_rows = n_rows + 1
             except Exception as e:
                 log.error("Fatal error parsing row #{0}.".format(n_rows))
                 raise e
 
-            log.info("Number of rows are {0}.".format(n_rows))
+            log.info("Number of data rows are {0}.".format(n_rows - 1))
             if n_files != total_files:
                 log.error("Only {0} files out of {1} were found.".format(
                     n_files, total_files))
@@ -395,3 +409,140 @@ def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
         log.error("Error in creating database: {0}.".format(e))
         return None
 
+def move_to_backup(db_path, csv_path=SPEC_D_CSV_FILENAME):
+    """
+    Rename the CSV in a Spec D database to a backup name.
+
+    arguments:
+        db_path : string
+            POSIX path to Cinema database
+        csv_path : string = SPEC_D_CSV_FILENAME
+            POSIX relative path to Cinema CSV
+
+    returns:
+        the relative filename of the renamed csv_path
+
+    side effects:
+        renames old csv_path to csv_path.<epoch timestamp>.<md5 hash>
+    """
+
+    # calculate the hash and time stamp
+    h = hashlib.md5()
+    with open(os.path.join(db_path, csv_path)) as f:
+        line = f.read(4096)
+        while line != '':
+            h.update(line.encode('utf-8'))
+            line = f.read(4096)
+        h = h.hexdigest()
+    t = int(time.time())
+
+    # get the paths
+    full_fn = os.path.join(db_path, csv_path)
+    backup = csv_path + '.' + str(t) + '.' + h
+    full_backup = os.path.join(db_path, backup) 
+    os.rename(full_fn, full_backup)
+
+    return backup
+
+def add_columns_by_row_data(db_path, column_names, row_function, 
+                           csv_path=SPEC_D_CSV_FILENAME):
+    """
+    For every row in a Cinema database, it will evaluate *row_function*
+    on the database (passing the row data to the function). This adds new
+    column(s) to the database, by writing a new SPEC_D_CSV_FILENAME. 
+    It will backup the old SPEC_D_CSV_FILENAME.
+
+    arguments:
+        db_path : string
+            POSIX path to Cinema database
+        column_names : tuple of strings
+            the header name(s) for the new column(s). if a column name is FILE,
+            the column will be appended to the total list of columns, otherwise
+            it will be placed immediately before other FILE columns
+        row_function : function(row: tuple of strings) => tuple of string
+            a function that takes a row tuple, and returns a tuple of strings
+            based on the row tuple, i.e., it will take the value of the
+            row to compute new value(s). len of the return value must
+            equal the len of column_names
+        csv_path : string = SPEC_D_CSV_FILENAME
+            POSIX relative path to Cinema CSV
+
+    returns:
+        the name of the backup (previous version) csv_path
+
+    side effects:
+        writes a new csv_path and will rename the old csv_path to 
+        csv_path.<epoch timestamp>.<md5 hash>
+    """
+
+    # create a backup
+    backup = move_to_backup(db_path, csv_path)
+    full_fn = os.path.join(db_path, csv_path)
+
+    # get the data from the backup
+    rows = get_iterator(db_path, backup) 
+    header = next(rows)
+
+    # calculate where to put the new columns
+    is_file = [i == FILE_HEADER_KEYWORD for i in header + column_names]
+
+    # create a row writing function
+    # TODO we could be fancy and to vectorization (i.e., scan sum to swizzle)
+    def write_row(writer, new_row):
+        file_data = []
+        non_file_data = []
+        for t, d in zip(is_file, new_row):
+            if t:
+                file_data.append(d)
+            else:
+                non_file_data.append(d)
+        writer.writerow(non_file_data + file_data)
+
+    # write the new column data
+    with open(full_fn, "w") as out:
+        writer = csv.writer(out)
+        # write the new header
+        write_row(writer, header + column_names)
+        # write the new rows
+        for row in rows:
+            write_row(writer, row + row_function(row))
+
+    # return the backup filename
+    return backup
+
+def add_column_by_row_data(db_path, column_name, row_function, 
+                           csv_path=SPEC_D_CSV_FILENAME):
+    """
+    For every row in a Cinema database, it will evaluate *row_function*
+    on the database (passing the row data to the function). This adds a new
+    column to the database, by writing a new SPEC_D_CSV_FILENAME. 
+    It will backup the old SPEC_D_CSV_FILENAME. This is a convenience
+    function that calls add_columns_by_row_data.
+
+    arguments:
+        db_path : string
+            POSIX path to Cinema database
+        column_name : string
+            the header name for the new column. if the column name is FILE,
+            the column will be appended to the total list of columns, otherwise
+            it will be placed immediately before other FILE columns
+        row_function : function(row: tuple of strings) => string
+            a function that takes a row tuple, and returns a string
+            based on the row tuple, i.e., it will take the value of the
+            row to compute a new value.
+        csv_path : string = SPEC_D_CSV_FILENAME
+            POSIX relative path to Cinema CSV
+
+    returns:
+        the name of the backup (previous version) file
+
+    side effects:
+        writes a new SPEC_D_CSV_FILENAME and will rename the old 
+        SPEC_D_CSV_FILENAME to SPEC_D_CSV_FILENAME.<epoch timestamp>.<md5 hash>
+    """
+
+    def __row_function(row):
+        return (row_function(row),)
+
+    return add_columns_by_row_data(db_path, (column_name,), __row_function,
+                                   csv_path)

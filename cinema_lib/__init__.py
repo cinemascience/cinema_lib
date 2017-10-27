@@ -7,6 +7,7 @@ The various submodules are:
     cinema.spec.a: utilities for Spec A
     cinema.spec.d: utilities for Spec D
     cinema.test: unit and regression testing
+    cinema.image: utilities for processing image columns
 """
 
 def version():

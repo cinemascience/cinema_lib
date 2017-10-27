@@ -1,8 +1,16 @@
-TODO list in priority order:
+TODOs:
+- a command line tool test
+- --image-crop (mirror Laura's work)
+- --image-centroid (mirror Laura's work)
+- --image-moments 
+- --error-codes to list error codes
+- --filetypes to list filetypes in a FILE column
+- --query to perform a SQL query
 - conda packaging
 - continuous integration
-- license
-- check that a database is the same (MD5 sum)
 - D to A conversion
-- validate any spec (return the version)
 - upload to conda, pypi, and github
+- HDF5 to D conversion
+- SQLite to D conversion
+- Scoreboard (z-checker) commands
+- Stats on columns commands
