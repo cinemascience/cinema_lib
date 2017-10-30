@@ -1,5 +1,6 @@
 TODOs:
 - a command line tool test
+- start writing metadata (data.json)
 - --image-crop (mirror Laura's work)
 - --image-centroid (mirror Laura's work)
 - --image-moments 
