@@ -63,7 +63,7 @@ def main():
 
     epilog_text = textwrap.dedent(
 """
-- Column numbers, N, are 0-indexed. 
+- Column numbers, N, are 0-indexed, i.e., 0, 1, 2, etc.
 - Only one COMMAND can be run at a time.
 - VALIDATE and FLAG can be run in conjunction with COMMAND or independently.\n\n
 """)
@@ -75,16 +75,47 @@ def main():
 """
 - Image functions require that the input database is Spec D. The database 
   (data.csv) will be backed up prior to running the command. Backup files
-  can be found in the database directory as data_csv.<timestamp>.<md5 hash>
+  can be found in the database directory as "data_csv.<timestamp>.<md5 hash>".
 - Images in a column need to have the same number of components (grey, rgb, 
   rgba, etc.) and that there is an image file in the first data row to be 
-  able to detect the number of components for the images.\n\n
+  able to detect the number of components for the images.
+- Functions run on multi-component images will operate per component, 
+  returning the result per component, except for --image-unique and 
+  --image-joint.\n\n
 """)
     except Exception as e:
         epilog_text += textwrap.dedent(
         """
         Image functionality unavailable. Scikit-image and numpy required: 
         """ + str(e) + "\n\n")
+
+    # examples
+    epilog_text += textwrap.dedent(
+"""
+Examples:
+$ cinema -t -a cinema_lib/test/data/sphere.cdb
+    validate a Spec A database
+$ cinema -i -d cinema_lib/test/data/sphere.cdb
+    return the header (parameters, columns) for a Spec D database
+$ cinema -itvq -d cinema_lib/test/data/sphere.cdb
+    quickly validate a Spec D database and report the header, verbosely
+$ cinema -t --a2d -a cinema_lib/test/data/sphere.cdb
+    validate a Spec A database and convert it to a Spec D database\n\n
+""")
+
+    try:
+        import skimage
+        import numpy
+        epilog_text += textwrap.dedent(
+"""
+Image examples:
+$ cinema -d cinema_lib/test/data/sphere.cdb --image-grey 2
+    convert RGB images to greyscale images
+$ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
+    calculate the average color per component in images\n\n
+""")
+    except:
+        pass
 
     # Don't surpress add_help here so it will handle -h
     parser = argparse.ArgumentParser(
@@ -119,16 +150,18 @@ def main():
     # add skimage tools
     try:
         import skimage
+        parser.add_argument("--image-grey", metavar="N", type=int,
+                help="COMMAND: convert and write image data to greyscale PNG in column number N, using Scikit-image color.rgb2grey. new files are named \"<old_filename>_grey.png\"")
         parser.add_argument("--image-mean", metavar="N", type=int,
                 help="COMMAND: add image mean data calculated from images in column number N")
-        parser.add_argument("--image-grey", metavar="N", type=int,
-                help="COMMAND: convert and write image data to greyscale PNG in column number N, using Scikit-image color.rgb2grey")
         parser.add_argument("--image-stddev", metavar="N", type=int,
                 help="COMMAND: add image standard deviation data calculated from images in column number N")
-        parser.add_argument("--image-entropy", metavar="N", type=int,
-                help="COMMAND: add image Shannon entropy data calculated from images in column number N, using a histogram with 131072 bins")
         parser.add_argument("--image-unique", metavar="N", type=int,
                 help="COMMAND: add unique pixel count data calculated from images in column number N")
+        parser.add_argument("--image-entropy", metavar="N", type=int,
+                help="COMMAND: add image Shannon entropy data calculated from images in column number N, using a histogram with 131072 bins")
+        parser.add_argument("--image-joint", metavar="N", type=int,
+                help="command: add the joint entropy (multi-dimensional Shannon entropy) data calculated from images in column number N, using 1024 discretization levels per dimension")
         parser.add_argument("--image-canny", metavar="N", type=int,
                 help="COMMAND: add Canny edge pixel count data calculated from images in column number N")
         parser.add_argument("--image-firstq", metavar="N", type=int,
@@ -143,8 +176,6 @@ def main():
                 help="command: add the 95th percentile data calculated from images in column number N")
         parser.add_argument("--image-99th", metavar="N", type=int,
                 help="command: add the 99th percentile data calculated from images in column number N")
-        parser.add_argument("--image-joint", metavar="N", type=int,
-                help="command: add the joint entropy (multi-dimensional Shannon entropy) data calculated from images in column number N, using 1024 discretization levels per dimension")
     except:
         pass
 
