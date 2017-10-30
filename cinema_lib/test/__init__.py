@@ -676,14 +676,14 @@ class ImageTests(unittest.TestCase):
 
         for row, reg_row in zip(d_db, regress):
             m = means[row[5]]
-            self.assertTrue((m[0] - 1e-08  < float(row[2])) and
-                            (float(row[2]) < m[0] + 1e-08 ))
+            self.assertTrue((m[0] - m[0]*1e-03  < float(row[2])) and
+                            (float(row[2]) < m[0] + m[0]*1e-03 ))
             self.assertTrue(row[2] != "NaN")
-            self.assertTrue((m[1] - 1e-08  < float(row[3])) and
-                            (float(row[3]) < m[1] + 1e-08 ))
+            self.assertTrue((m[1] - m[1]*1e-03  < float(row[3])) and
+                            (float(row[3]) < m[1] + m[1]*1e-03 ))
             self.assertTrue(row[3] != "NaN")
-            self.assertTrue((m[2] - 1e-08  < float(row[4])) and
-                            (float(row[4]) < m[2] + 1e-08 ))
+            self.assertTrue((m[2] - m[2]*1e-03  < float(row[4])) and
+                            (float(row[4]) < m[2] + m[2]*1e-03 ))
             self.assertTrue(row[4] != "NaN")
             self.assertEqual(row, reg_row)
         self.assertTrue(d.check_database(self.SPHERE_DATA))
@@ -727,14 +727,14 @@ class ImageTests(unittest.TestCase):
 
         for row, reg_row in zip(d_db, regress):
             m = means[row[5]]
-            self.assertTrue((m[0] - 1e-08  < float(row[2])) and
-                            (float(row[2]) < m[0] + 1e-08 ))
+            self.assertTrue((m[0] - m[0]*1e-03  < float(row[2])) and
+                            (float(row[2]) < m[0] + m[0]*1e-03 ))
             self.assertTrue(row[2] != "NaN")
-            self.assertTrue((m[1] - 1e-08  < float(row[3])) and
-                            (float(row[3]) < m[1] + 1e-08 ))
+            self.assertTrue((m[1] - m[1]*1e-03  < float(row[3])) and
+                            (float(row[3]) < m[1] + m[1]*1e-03 ))
             self.assertTrue(row[3] != "NaN")
-            self.assertTrue((m[2] - 1e-08  < float(row[4])) and
-                            (float(row[4]) < m[2] + 1e-08 ))
+            self.assertTrue((m[2] - m[2]*1e-03  < float(row[4])) and
+                            (float(row[4]) < m[2] + m[2]*1e-03 ))
             self.assertTrue(row[4] != "NaN")
             self.assertEqual(row, reg_row)
         self.assertTrue(d.check_database(self.SPHERE_DATA))
@@ -780,14 +780,14 @@ class ImageTests(unittest.TestCase):
 
         for row, reg_row in zip(d_db, regress):
             m = means[row[5]]
-            self.assertTrue((m[0] - 1e-08  < float(row[2])) and
-                            (float(row[2]) < m[0] + 1e-08 ))
+            self.assertTrue((m[0] - m[0]*1e-03  < float(row[2])) and
+                            (float(row[2]) < m[0] + m[0]*1e-03 ))
             self.assertTrue(row[2] != "NaN")
-            self.assertTrue((m[1] - 1e-08  < float(row[3])) and
-                            (float(row[3]) < m[1] + 1e-08 ))
+            self.assertTrue((m[1] - m[1]*1e-03  < float(row[3])) and
+                            (float(row[3]) < m[1] + m[1]*1e-03 ))
             self.assertTrue(row[3] != "NaN")
-            self.assertTrue((m[2] - 1e-08  < float(row[4])) and
-                            (float(row[4]) < m[2] + 1e-08 ))
+            self.assertTrue((m[2] - m[2]*1e-03  < float(row[4])) and
+                            (float(row[4]) < m[2] + m[2]*1e-03 ))
             self.assertTrue(row[4] != "NaN")
             self.assertEqual(row, reg_row)
         self.assertTrue(d.check_database(self.SPHERE_DATA))
@@ -925,14 +925,14 @@ class ImageTests(unittest.TestCase):
 
         for row, reg_row in zip(d_db, regress):
             m = means[row[5]]
-            self.assertTrue((m[0] - 1e-08  < float(row[2])) and
-                            (float(row[2]) < m[0] + 1e-08 ))
+            self.assertTrue((m[0] - m[0]*1e-03  < float(row[2])) and
+                            (float(row[2]) < m[0] + m[0]*1e-03 ))
             self.assertTrue(row[2] != "NaN")
-            self.assertTrue((m[1] - 1e-08  < float(row[3])) and
-                            (float(row[3]) < m[1] + 1e-08 ))
+            self.assertTrue((m[1] - m[1]*1e-03  < float(row[3])) and
+                            (float(row[3]) < m[1] + m[1]*1e-03 ))
             self.assertTrue(row[3] != "NaN")
-            self.assertTrue((m[2] - 1e-08  < float(row[4])) and
-                            (float(row[4]) < m[2] + 1e-08 ))
+            self.assertTrue((m[2] - m[2]*1e-03  < float(row[4])) and
+                            (float(row[4]) < m[2] + m[2]*1e-03 ))
             self.assertTrue(row[4] != "NaN")
             self.assertEqual(row, reg_row)
         self.assertTrue(d.check_database(self.SPHERE_DATA))
@@ -977,8 +977,8 @@ class ImageTests(unittest.TestCase):
 
         for row, reg_row in zip(d_db, regress):
             m = means[row[3]]
-            self.assertTrue((m - 1e-08  < float(row[2])) and
-                            (float(row[2]) < m + 1e-08 ))
+            self.assertTrue((m - m*1e-03  < float(row[2])) and
+                            (float(row[2]) < m + m*1e-03 ))
             self.assertTrue(row[2] != "NaN")
             self.assertEqual(row, reg_row)
         self.assertTrue(d.check_database(self.SPHERE_DATA))
