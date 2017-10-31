@@ -489,26 +489,34 @@ def add_columns_by_row_data(db_path, column_names, row_function,
     rows = get_iterator(db_path, backup) 
     header = next(rows)
 
+    # output data
+    new_header = header + column_names
+    output_row = [None] * len(new_header)
+
     # calculate where to put the new columns
-    is_file = [is_file_column(i) for i in header + column_names]
+    isnt_file = [not is_file_column(i) for i in new_header]
+    left = 0 # start of non files
+    right = sum(isnt_file) # start of files
+    swizzle = [0] * len(new_header) # index vector (permute)
+    for i in range(0, len(new_header)):
+        if isnt_file[i]:
+            swizzle[i] = left
+            left += 1
+        else:
+            swizzle[i] = right
+            right += 1
 
     # create a row writing function
-    # TODO we could be fancy and to vectorization (i.e., scan sum to swizzle)
     def write_row(writer, new_row):
-        file_data = []
-        non_file_data = []
-        for t, d in zip(is_file, new_row):
-            if t:
-                file_data.append(d)
-            else:
-                non_file_data.append(d)
-        writer.writerow(non_file_data + file_data)
+        for i in range(0, len(new_header)):
+            output_row[swizzle[i]] = new_row[i]
+        writer.writerow(output_row)
 
     # write the new column data
     with open(full_fn, "w") as out:
         writer = csv.writer(out)
         # write the new header
-        write_row(writer, header + column_names)
+        write_row(writer, new_header)
         # write the new rows
         for row in rows:
             write_row(writer, row + row_function(row))
