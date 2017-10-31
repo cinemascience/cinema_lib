@@ -175,7 +175,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
         parser.add_argument("--image-entropy", metavar="N", type=int,
                 help="COMMAND: add image Shannon entropy data calculated from images in column number N, using a histogram with 131072 bins")
         parser.add_argument("--image-joint", metavar="N", type=int,
-                help="command: add the joint entropy (multi-dimensional Shannon entropy) data calculated from images in column number N, using 1024 discretization levels per dimension")
+                help="COMMAND: add the joint entropy (multi-dimensional Shannon entropy) data calculated from images in column number N, using 1024 discretization levels per dimension")
         parser.add_argument("--image-canny", metavar="N", type=int,
                 help="COMMAND: add Canny edge pixel count data calculated from images in column number N")
         parser.add_argument("--image-firstq", metavar="N", type=int,
