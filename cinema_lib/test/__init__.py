@@ -183,7 +183,10 @@ class SpecD(unittest.TestCase):
         self.assertTrue(d.check_database(self.SPHERE_DATA, "nan.csv"))
 
     def test_sphere_wrong_file(self):
-        self.assertFalse(d.check_database(self.SPHERE_DATA, "wrong_file.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "wrong_file1.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "wrong_file2.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "wrong_file3.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "wrong_file4.csv"))
 
     def test_sphere_no_header(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "no_header.csv"))
@@ -214,6 +217,13 @@ class SpecD(unittest.TestCase):
 
     def test_sphere_improper_quoted_row_2_alt(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_2_alt.csv"))
+
+    def test_sphere_files(self):
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "files1.csv"))
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "files2.csv"))
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "files3.csv"))
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "files4.csv"))
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "files5.csv"))
 
 
 class Convert(unittest.TestCase):
@@ -401,6 +411,29 @@ class AddColumnD(unittest.TestCase):
         self.assertTrue(reduce(lambda x, y: x + 1, new_db, 0) == 21)
         os.unlink(self.d_csv)
 
+    def test_create_new_files_prefix(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        def create_file(row):
+            fn = row[-1] + ".foo"
+            full = os.path.join(self.SPHERE_DATA, fn)
+            open(full, "w").close()
+            return fn
+        backup = d.add_column_by_row_data(self.SPHERE_DATA, "FILEfoo", 
+                                          create_file)
+        backup_db = os.path.join(self.SPHERE_DATA, backup)
+        self.assertTrue(filecmp.cmp(backup_db, self.d_backup, False))
+        new_db = d.get_iterator(self.SPHERE_DATA)
+        header = next(new_db)
+        self.assertEqual(header, ("theta","phi","FILE","FILEfoo"))
+        self.assertTrue(reduce(
+                        lambda x, y: x and (y[2] + ".foo" == y[3]),
+                        new_db, True))
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+        new_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, new_db, 0) == 21)
+        os.unlink(self.d_csv)
+
+
     def test_plus_one_plus_two(self):
         sh.copyfile(self.d_backup, self.d_csv)
         backup = d.add_columns_by_row_data(self.SPHERE_DATA, 
@@ -435,7 +468,7 @@ class AddColumnD(unittest.TestCase):
         backup = d.add_columns_by_row_data(self.SPHERE_DATA, 
                                            ("phi plus one",
                                             "phi plus two",
-                                            "FILE", "FILE"),
+                                            "FILEbar", "FILEbaz"),
                                            create_data)
         backup_db = os.path.join(self.SPHERE_DATA, backup)
         self.assertTrue(filecmp.cmp(backup_db, self.d_backup, False))
@@ -443,7 +476,7 @@ class AddColumnD(unittest.TestCase):
         header = next(new_db)
         self.assertEqual(header, ("theta","phi",
                                   "phi plus one", "phi plus two",
-                                  "FILE","FILE","FILE"))
+                                  "FILE","FILEbar","FILEbaz"))
         self.assertTrue(reduce(
                         lambda x, y: x and 
                                      (y[4] + ".foo" == y[5]) and
@@ -467,13 +500,13 @@ class AddColumnD(unittest.TestCase):
             open(full_b, "w").close()
             return (fn_a, fn_b)
         backup = d.add_columns_by_row_data(self.SPHERE_DATA, 
-                                           ("FILE", "FILE"),
+                                           ("FILEone", "FILEtwo"),
                                            create_files)
         backup_db = os.path.join(self.SPHERE_DATA, backup)
         self.assertTrue(filecmp.cmp(backup_db, self.d_backup, False))
         new_db = d.get_iterator(self.SPHERE_DATA)
         header = next(new_db)
-        self.assertEqual(header, ("theta","phi","FILE","FILE","FILE"))
+        self.assertEqual(header, ("theta","phi","FILE","FILEone","FILEtwo"))
         self.assertTrue(reduce(
                         lambda x, y: x and 
                                      (y[2] + ".foo" == y[3]) and
@@ -544,12 +577,12 @@ class ImageTests(unittest.TestCase):
         sh.copyfile(self.d_backup, self.d_csv)
 
         self.assertFalse(d_image.file_add_column(self.SPHERE_DATA, 2,
-            "FILE", copyfile, n_components=0))
+            "FILEfoobar", copyfile, n_components=0))
         self.assertTrue(d.check_database(self.SPHERE_DATA))
         d_db = d.get_iterator(self.SPHERE_DATA)
         self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
         d_db = d.get_iterator(self.SPHERE_DATA)
-        self.assertEqual(next(d_db), ("theta", "phi", "FILE", "FILE"))
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", "FILEfoobar"))
 
         for row in d_db:
             left = os.path.join(self.SPHERE_DATA, row[2])
@@ -566,7 +599,7 @@ class ImageTests(unittest.TestCase):
         self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
         d_db = d.get_iterator(self.SPHERE_DATA)
         self.assertEqual(next(d_db), ("theta", "phi", "compute 0", 
-            "FILE", "FILE"))
+            "FILE", "FILEfoobar"))
 
         for row in d_db:
             self.assertTrue(int(row[2]) == len(row[4]))
@@ -580,7 +613,7 @@ class ImageTests(unittest.TestCase):
         self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
         d_db = d.get_iterator(self.SPHERE_DATA)
         self.assertEqual(next(d_db), ("theta", "phi", "compute 0", 
-            "failure 0", "failure 1", "failure 2", "FILE", "FILE"))
+            "failure 0", "failure 1", "failure 2", "FILE", "FILEfoobar"))
 
         for row in d_db:
             self.assertTrue(row[3] == "bar")
@@ -780,6 +813,11 @@ class ImageTests(unittest.TestCase):
 
         for row, reg_row in zip(d_db, regress):
             m = means[row[5]]
+            # debug because for some reason this sometimes fails
+            log.debug(row)
+            log.debug(reg_row)
+            log.debug(m)
+            log.debug(means)
             self.assertTrue((m[0] - m[0]*1e-03  < float(row[2])) and
                             (float(row[2]) < m[0] + m[0]*1e-03 ))
             self.assertTrue(row[2] != "NaN")

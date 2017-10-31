@@ -128,6 +128,13 @@ def typematch(row, types):
                    for v, t, h in zip(row, typecheck(row), types)],
                   True)
 
+def is_file_column(column):
+    if len(column) < 4:
+        return False
+    else:
+        return (column[:4] == FILE_HEADER_KEYWORD)
+
+
 def file_columns(header):
     """
     Given a header row, return the list of FILE column indices. Does
@@ -142,7 +149,7 @@ def file_columns(header):
     """
 
     return [i for i, h in zip(range(0, len(header)), header) if
-            h == FILE_HEADER_KEYWORD]
+            is_file_column(h)]
 
 
 def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
@@ -203,8 +210,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
 
         # check if there is FILE with whitespace
         warn_file_whitespace = reduce(lambda x, y: x or 
-                                      ((y[1] == FILE_HEADER_KEYWORD) and 
-                                       (y[0] != y[1])),
+                                      (is_file_column(y[1]) and (y[0] != y[1])),
                                       zip(header, [i.strip() for i in header]),
                                       False)
         if warn_file_whitespace:
@@ -484,7 +490,7 @@ def add_columns_by_row_data(db_path, column_names, row_function,
     header = next(rows)
 
     # calculate where to put the new columns
-    is_file = [i == FILE_HEADER_KEYWORD for i in header + column_names]
+    is_file = [is_file_column(i) for i in header + column_names]
 
     # create a row writing function
     # TODO we could be fancy and to vectorization (i.e., scan sum to swizzle)

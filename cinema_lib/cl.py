@@ -33,6 +33,18 @@ class ERROR_CODES:
   IMAGE_99TH_FAILED = 22
   IMAGE_JOINT_FAILED = 23
 
+def relabel(default, user, is_file=False):
+    if is_file:
+        if user == None:
+            return "FILE" + default
+        else:
+            return "FILE" + user
+    else:
+        if user == None:
+            return default
+        else:
+            return user
+
 def check_n(header, n):
     if n >= len(header):
         log.error("N ({0}) is greater or equal to the number of columns in input database ({1}).".format(n, len(header)))
@@ -111,8 +123,8 @@ $ cinema -t --a2d -a cinema_lib/test/data/sphere.cdb
 Image examples:
 $ cinema -d cinema_lib/test/data/sphere.cdb --image-grey 2
     convert RGB images to greyscale images
-$ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
-    calculate the average color per component in images\n\n
+$ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
+    calculate the average color per component in images, naming them average
 """)
     except:
         pass
@@ -137,6 +149,8 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
             help="INPUT: specify an input Spec A database")
     parser.add_argument("-d", "--dietrich", metavar="DB", type=str,
             help="INPUT: specify an input Spec D database")
+    parser.add_argument("-l", "--label", metavar="STR", type=str,
+            help="INPUT: specify a header (label) for new output columns, otherwise a default label is generated. if the column(s) are output files, FILE will be automatically prepended to the supplied label.")
     parser.add_argument("-t", "--test", action="store_true", default=False,
             help="VALIDATE: validate input databases. if used in combination with a COMMAND, will only continue processing if INPUT databases are valid")
     parser.add_argument("-i", "--info", action="store_true", default=False,
@@ -299,7 +313,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     check_n(header, args.image_mean)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_mean, 
-                                               "image mean",
+                                               relabel(
+                                                   "image mean", 
+                                                   args.label),
                                                image.file_mean):
                         exit(ERROR_CODES.IMAGE_MEAN_FAILED)
                 # image-grey
@@ -307,7 +323,10 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     check_n(header, args.image_grey)
                     if d_image.file_add_column(args.dietrich,
                                                args.image_grey,
-                                               "FILE",
+                                               relabel(
+                                                   "greyscale",
+                                                   args.label,
+                                                   True),
                                                image.file_grey,
                                                n_components=0):
                         exit(ERROR_CODES.IMAGE_GREY_FAILED)
@@ -316,7 +335,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     check_n(header, args.image_stddev)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_stddev, 
-                                               "image standard deviation",
+                                               relabel(
+                                                   "image standard deviation",
+                                                   args.label),
                                                image.file_stddev):
                         exit(ERROR_CODES.IMAGE_STDDEV_FAILED)
                 # image-entropy
@@ -324,7 +345,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     check_n(header, args.image_entropy)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_entropy, 
-                                               "image shannon entropy",
+                                               relabel(
+                                                   "image shannon entropy",
+                                                   args.label),
                                                image.file_shannon_entropy):
                         exit(ERROR_CODES.IMAGE_ENTROPY_FAILED)
                 # image-unique
@@ -332,7 +355,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     check_n(header, args.image_unique)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_unique, 
-                                               "image unique count",
+                                               relabel(
+                                                   "image unique count",
+                                                   args.label),
                                                image.file_unique_count,
                                                n_components=0):
                         exit(ERROR_CODES.IMAGE_UNIQUE_FAILED)
@@ -341,7 +366,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     check_n(header, args.image_canny)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_canny, 
-                                               "image canny count",
+                                               relabel(
+                                                   "image canny count",
+                                                   args.label),
                                                image.file_canny_count):
                         exit(ERROR_CODES.IMAGE_CANNY_FAILED)
                 # image-firstq
@@ -350,7 +377,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     __firstq = lambda x, y: image.file_percentile(x, y, 25)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_firstq, 
-                                               "image first quartile",
+                                               relabel(
+                                                   "image first quartile",
+                                                   args.label),
                                                __firstq):
                         exit(ERROR_CODES.IMAGE_FIRSTQ_FAILED)
                 # image-secondq
@@ -359,7 +388,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     __secondq = lambda x, y: image.file_percentile(x, y, 50)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_secondq, 
-                                               "image second quartile",
+                                               relabel(
+                                                   "image second quartile",
+                                                   args.label),
                                                __secondq):
                         exit(ERROR_CODES.IMAGE_SECONDQ_FAILED)
                 # image-thirdq
@@ -368,7 +399,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     __thirdq = lambda x, y: image.file_percentile(x, y, 75)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_thirdq, 
-                                               "image third quartile",
+                                               relabel(
+                                                   "image third quartile",
+                                                   args.label),
                                                __thirdq):
                         exit(ERROR_CODES.IMAGE_THIRDQ_FAILED)
                 # image-90th
@@ -377,7 +410,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     __90th = lambda x, y: image.file_percentile(x, y, 90)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_90th, 
-                                               "image 90th percentile",
+                                               relabel(
+                                                   "image 90th percentile",
+                                                   args.label),
                                                __90th):
                         exit(ERROR_CODES.IMAGE_90TH_FAILED)
                 # image-95th
@@ -386,7 +421,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     __95th = lambda x, y: image.file_percentile(x, y, 95)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_95th, 
-                                               "image 95th percentile",
+                                               relabel(
+                                                   "image 95th percentile",
+                                                   args.label),
                                                __95th):
                         exit(ERROR_CODES.IMAGE_95TH_FAILED)
                 # image-99th
@@ -395,7 +432,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     __99th = lambda x, y: image.file_percentile(x, y, 99)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_99th, 
-                                               "image 99th percentile",
+                                               relabel(
+                                                   "image 99th percentile",
+                                                   args.label),
                                                __99th):
                         exit(ERROR_CODES.IMAGE_99TH_FAILED)
                 # image-joint
@@ -403,7 +442,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2
                     check_n(header, args.image_joint)
                     if d_image.file_add_column(args.dietrich, 
                                                args.image_joint, 
-                                               "image joint entropy",
+                                               relabel(
+                                                   "image joint entropy",
+                                                   args.label),
                                                image.file_joint_entropy,
                                                n_components=0):
                         exit(ERROR_CODES.IMAGE_JOINT_FAILED)
