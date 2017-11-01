@@ -15,9 +15,9 @@ Current set of rules for contributing to cinema_lib:
    isn’t ready to be seen. *devel* should be semi-stable and not broken,
    i.e., test before you push "python setup.py test". If you need help 
    understanding "branchy style development" and *git*, please talk to Jon W. 
-5. Regression tests (unit tests) will be REQUIRED for ANY new code (i.e., unit
-   tests) pushed to *devel*. We haven't added CI (continuous integration) 
-   as of this writing, but it is planned. So you need to manually
+5. Regression tests (unit tests with previously known answers) will be REQUIRED
+   for ANY new code pushed to *devel*. We haven't added CI (continuous 
+   integration) as of this writing, but it is planned. So you need to manually
    "python setup.py test" before you push. Tests go in cinema_lib.test
 6. Writing Python help (a long string at the entry point of any function,
    class, or module, i.e., “””this is a long string”””) will be REQUIRED to
