@@ -29,7 +29,8 @@ Current set of rules for contributing to cinema_lib:
 7. We will merge changes into *master*, from *devel*, when we feel like we 
    want to cut a new stable version for release. Jon W. will do a merge, and 
    ask him if you'd like to create a new stable version from *devel* changes.
-   "git checkout master ; git merge --squash -X theirs devel ; git commit"
+   "git checkout master ; git merge --squash -X theirs devel ; git diff
+    devel ; <fix any discrepencies between master and devel> ; git commit"
 8. If there is a bug in *master*, fix it in *devel*, and it will get merged
    into *master* at a stable point.
 9. If there is a major bug in *master* and it can’t wait – create a bug fix
