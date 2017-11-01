@@ -3,6 +3,7 @@ TODOs:
 - start writing metadata (data.json)
 - --image-crop (mirror Laura's work)
 - --image-centroid (mirror Laura's work)
+- other descriptive image statistics (mode, median, min, max)
 - --image-moments 
 - --error-codes to list error codes
 - --filetypes to list filetypes in a FILE column
