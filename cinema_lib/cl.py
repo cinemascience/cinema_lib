@@ -165,7 +165,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
     try:
         import skimage
         parser.add_argument("--image-grey", metavar="N", type=int,
-                help="COMMAND: convert and write image data to greyscale PNG in column number N, using Scikit-image color.rgb2grey. new files are named \"<old_filename>_grey.png\"")
+                help="COMMAND: convert and write image data to greyscale PNG in column number N, using Scikit-image color.rgb2grey. new files are named \"<old_base_filename>_grey.png\"")
         parser.add_argument("--image-mean", metavar="N", type=int,
                 help="COMMAND: add image mean data calculated from images in column number N")
         parser.add_argument("--image-stddev", metavar="N", type=int,
