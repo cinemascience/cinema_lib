@@ -11,7 +11,7 @@ The various submodules are:
 """
 
 def version():
-    return "0.7.1"
+    return "0.7.2"
 
 def check_numpy_version(np):
     try:
