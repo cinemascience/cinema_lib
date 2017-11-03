@@ -7,8 +7,14 @@ from skimage import color
 from skimage import feature
 import numpy as np
 import os
-
 import logging as log
+
+from .. import check_numpy_version     
+                    
+try:               
+    check_numpy_version(np)            
+except Exception as e:                 
+    raise e        
 
 def file_mean(db_path, image_path):
     """

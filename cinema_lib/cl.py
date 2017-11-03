@@ -83,6 +83,10 @@ def main():
     try:
         import skimage
         import numpy
+
+        from . import check_numpy_version
+        check_numpy_version(numpy)
+
         epilog_text += textwrap.dedent(
 """
 - Image functions require that the input database is Spec D. The database 

@@ -25,5 +25,5 @@ Minimum requirements are:
 Optional requirements are:
 - Scikit-Image 
   - image capabilities
-- numpy
+- numpy 1.13
   - image capabilities
