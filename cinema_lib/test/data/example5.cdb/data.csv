@@ -1,0 +1,6 @@
+timestep,time value,"x,y,z",category,FILE,FILE plot
+1,0.1,"1.0,1.1,1.2",one,img/001.jpg,plot/a.csv
+2,0.2,"2.0,2.1,2.2",two,img/002.jpg,plot/b.tsv
+3,0.3,"3.0,3.1,3.2",three,data/003.jpg,plot/c.txt
+4,0.4,"4.0,4.1,4.2",four,data/004.png,plot/d.xls
+,0.5,,"",,

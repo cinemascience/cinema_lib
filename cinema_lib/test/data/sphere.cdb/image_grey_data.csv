@@ -1,4 +1,4 @@
-theta,phi,FILE,FILE
+theta,phi,FILE,FILE greyscale
 0,-180,-180/0.png,-180/0_grey.png
 0,-162,-162/0.png,-162/0_grey.png
 0,-144,-144/0.png,-144/0_grey.png

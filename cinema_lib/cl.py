@@ -80,9 +80,11 @@ def main():
 - VALIDATE and FLAG can be run in conjunction with COMMAND or independently.\n\n
 """)
     # try scikit-image
+    skimage_ok = False
     try:
         import skimage
         import numpy
+        skimage_ok = True
 
         from . import check_numpy_version
         check_numpy_version(numpy)
@@ -119,9 +121,7 @@ $ cinema -t --a2d -a cinema_lib/test/data/sphere.cdb
     validate a Spec A database and convert it to a Spec D database\n\n
 """)
 
-    try:
-        import skimage
-        import numpy
+    if skimage_ok:
         epilog_text += textwrap.dedent(
 """
 Image examples:
@@ -130,8 +130,6 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-grey 2
 $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
     calculate the average color per component in images, naming them average
 """)
-    except:
-        pass
 
     # Don't surpress add_help here so it will handle -h
     parser = argparse.ArgumentParser(
@@ -166,8 +164,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
         default=False,
         help="COMMAND: create a SQLite3 database from a Spec D database, to ./<database_name>.db")
     # add skimage tools
-    try:
-        import skimage
+    if skimage_ok:
         parser.add_argument("--image-grey", metavar="N", type=int,
                 help="COMMAND: convert and write image data to greyscale PNG in column number N, using Scikit-image color.rgb2grey. new files are named \"<old_base_filename>_grey.png\"")
         parser.add_argument("--image-mean", metavar="N", type=int,
@@ -194,8 +191,6 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
                 help="command: add the 95th percentile data calculated from images in column number N")
         parser.add_argument("--image-99th", metavar="N", type=int,
                 help="command: add the 99th percentile data calculated from images in column number N")
-    except:
-        pass
 
     args = parser.parse_args(remaining_argv)
 
@@ -281,7 +276,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
             exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_D_TO_SQLITE_CONVERSION)
 
     # image commands
-    try:
+    if skimage_ok:
         from .image import d as d_image
         from . import image
 
@@ -452,9 +447,6 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
                                                image.file_joint_entropy,
                                                n_components=0):
                         exit(ERROR_CODES.IMAGE_JOINT_FAILED)
-
-    except Exception as e:
-        print(e)
         
     # print help
     if no_command and not checked_db:

@@ -137,6 +137,11 @@ class SpecD(unittest.TestCase):
                             level=60, datefmt='%I:%M:%S')
 
         self.SPHERE_DATA = os.path.join(TEST_PATH, "sphere.cdb")
+        self.EXAMPLE1_DATA = os.path.join(TEST_PATH, "example1.cdb")
+        self.EXAMPLE2_DATA = os.path.join(TEST_PATH, "example2.cdb")
+        self.EXAMPLE3_DATA = os.path.join(TEST_PATH, "example3.cdb")
+        self.EXAMPLE4_DATA = os.path.join(TEST_PATH, "example4.cdb")
+        self.EXAMPLE5_DATA = os.path.join(TEST_PATH, "example5.cdb")
 
     def test_sphere(self):
         self.assertTrue(d.check_database(self.SPHERE_DATA)) 
@@ -225,6 +230,30 @@ class SpecD(unittest.TestCase):
         self.assertTrue(d.check_database(self.SPHERE_DATA, "files4.csv"))
         self.assertTrue(d.check_database(self.SPHERE_DATA, "files5.csv"))
 
+    def test_uniqueness(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, 
+            "duplicate_header1.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, 
+            "duplicate_header2.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, 
+            "duplicate_header3.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, 
+            "duplicate_header4.csv"))
+
+    def test_example1(self):
+        self.assertTrue(d.check_database(self.EXAMPLE1_DATA))
+
+    def test_example2(self):
+        self.assertTrue(d.check_database(self.EXAMPLE2_DATA))
+
+    def test_example3(self):
+        self.assertTrue(d.check_database(self.EXAMPLE3_DATA))
+
+    def test_example4(self):
+        self.assertTrue(d.check_database(self.EXAMPLE4_DATA))
+
+    def test_example5(self):
+        self.assertTrue(d.check_database(self.EXAMPLE5_DATA))
 
 class Convert(unittest.TestCase):
     """
@@ -286,6 +315,26 @@ class Convert(unittest.TestCase):
         fetch = db.execute("SELECT COUNT(*) FROM %s WHERE phi > 0" %
                 self.SPHERE_TABLE).fetchone()
         self.assertTrue(fetch[0] == 9)
+        os.unlink(self.d_csv)
+
+    def test_sqlite3_multiple_files(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        db = d.get_sqlite3(self.SPHERE_DATA, "files4.csv")
+        self.assertTrue(db != None)
+        log.info("Tables are:")
+        for row in db.execute("SELECT * FROM sqlite_master"):
+            log.info("{0}".format(row))
+        fetch = db.\
+          execute("SELECT COUNT(*) FROM %s" % self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 3)
+        fetch = db.execute("SELECT COUNT(*) FROM %s WHERE theta != 0" %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 0)
+        fetch = db.execute('SELECT FILE,"FILE a","FILE b" FROM %s WHERE phi = -180' %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == '-180/0.png')
+        self.assertTrue(fetch[1] == '-162/0.png')
+        self.assertTrue(fetch[2] == '-144/0.png')
         os.unlink(self.d_csv)
 
 class BackupD(unittest.TestCase):
@@ -396,13 +445,13 @@ class AddColumnD(unittest.TestCase):
             full = os.path.join(self.SPHERE_DATA, fn)
             open(full, "w").close()
             return fn
-        backup = d.add_column_by_row_data(self.SPHERE_DATA, "FILE", 
+        backup = d.add_column_by_row_data(self.SPHERE_DATA, "FILE 2", 
                                           create_file)
         backup_db = os.path.join(self.SPHERE_DATA, backup)
         self.assertTrue(filecmp.cmp(backup_db, self.d_backup, False))
         new_db = d.get_iterator(self.SPHERE_DATA)
         header = next(new_db)
-        self.assertEqual(header, ("theta","phi","FILE","FILE"))
+        self.assertEqual(header, ("theta","phi","FILE","FILE 2"))
         self.assertTrue(reduce(
                         lambda x, y: x and (y[2] + ".foo" == y[3]),
                         new_db, True))
@@ -645,12 +694,12 @@ class ImageTests(unittest.TestCase):
             a_grey[row[-1]] = new_fn
 
         self.assertFalse(d_image.file_add_column(self.SPHERE_DATA, 2,
-            "FILE", image.file_grey, n_components=0))
+            "FILE greyscale", image.file_grey, n_components=0))
 
         d_db = d.get_iterator(self.SPHERE_DATA)
         self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
         d_db = d.get_iterator(self.SPHERE_DATA)
-        self.assertEqual(next(d_db), ("theta", "phi", "FILE", "FILE"))
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", "FILE greyscale"))
 
         regress = d.get_iterator(self.SOURCE_DATA, self.GREY_DATA)
         next(regress)

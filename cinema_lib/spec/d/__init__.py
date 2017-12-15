@@ -70,7 +70,7 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
         if strict:
             def __wrapped(fn):
                 with open(fn, "r") as f:
-                    for row in csv.reader(f, strict=True):
+                    for row in csv.reader(f, strict=True, dialect='unix'):
                         if __python_rfc_4180_bug_check(row):
                             raise Exception("Unescaped double-quote appears after comma and white-space.")
                         yield tuple(row)
@@ -78,7 +78,7 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
         else:
             def __wrapped(fn):
                 with open(fn, "r") as f:
-                    for row in csv.reader(f):
+                    for row in csv.reader(f, dialect='unix'):
                         yield tuple(row)
             wrapped = __wrapped
         return wrapped(fn)
@@ -196,9 +196,15 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         # check the types of the first line
         header_error = reduce(lambda x, y: x or (y != TYPE_STRING), 
                               types, False)
+
         if header_error:
             log.error("Column header(s) are not all type string: {0}.".format(
                       types))
+
+        if len(set(header)) != len(header):
+            log.error("Header identifier(s) (labels) are not unique: {0}.".
+                      format(header))
+            header_error = True
 
         # check if there is whitespace
         warn_whitespace = reduce(lambda x, y: x or (y[0] != y[1]),
@@ -206,7 +212,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                                  False)
         if warn_whitespace:
             log.warning(
-              "There are whitespace(s) preceeding or following a comma(s) in the header: {0}.".format(header))
+              "There are whitespace(s) preceding or following a comma(s) in the header: {0}.".format(header))
 
         # check if there is FILE with whitespace
         warn_file_whitespace = reduce(lambda x, y: x or 
@@ -377,16 +383,6 @@ def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
         log.info("First row is {0}.".format(first))
         types = typecheck(first)
         log.info("Types are {0}.".format(types))
-
-        # determine if we have more than one FILE
-        # and adjust names
-        files = file_columns(header)
-        if len(files) > 0:
-            log.info(
-                "More than one FILE, so numbers will be appended to FILE.")
-            header = list(header)
-            for i, n in zip(files, range(0, len(files))):
-                header[i] = header[i] + str(n)
 
         # figure out the table name
         name = os.path.splitext(os.path.basename(db_path))[0]
