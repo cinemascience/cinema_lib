@@ -32,6 +32,17 @@ class ERROR_CODES:
   IMAGE_95TH_FAILED = 21
   IMAGE_99TH_FAILED = 22
   IMAGE_JOINT_FAILED = 23
+  IMAGE_OCV_GRAY_FAILED = 24
+  IMAGE_OCV_BOX_BLUR_FAILED = 25
+  IMAGE_OCV_GAUSSIAN_BLUR_FAILED = 26
+  IMAGE_OCV_MEDIAN_BLUR_FAILED = 27
+  IMAGE_OCV_BILATERAL_FILTER_FAILED = 28
+  IMAGE_OCV_CANNY_FAILED = 29
+  IMAGE_OCV_CONTOURS_FAILED = 30
+  IMAGE_OCV_SIFT_FAILED = 31
+  IMAGE_OCV_SURF_FAILED = 32
+  IMAGE_OCV_FAST_FAILED = 33
+
 
 def relabel(default, user, is_file=False):
     if is_file:
@@ -58,7 +69,7 @@ def main():
     from . import spec
     from .spec import a
     from . import version
-
+    import cv2
     import argparse
     import configparser
     import textwrap
@@ -84,6 +95,7 @@ def main():
     try:
         import skimage
         import numpy
+        import cv2
         skimage_ok = True
 
         from . import check_numpy_version
@@ -191,6 +203,28 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
                 help="command: add the 95th percentile data calculated from images in column number N")
         parser.add_argument("--image-99th", metavar="N", type=int,
                 help="command: add the 99th percentile data calculated from images in column number N")
+        parser.add_argument("--image-ocv-grey", metavar="N", type=int,
+                help="COMMAND: convert and write image data to greyscale PNG in column number N, using OpenCV cvtColor(). new files are named \"<old_base_filename>_ocv_grey.png\"")
+        parser.add_argument("--image-ocv-box-blur", metavar="N", type=int,
+                help="COMMAND: apply box blur and write image data to PNG in column number N, using OpenCV blur(). new files are named \"<old_base_filename>_ocv_box_blur.png\"")
+        parser.add_argument("--image-ocv-gaussian-blur", metavar="N", type=int,
+                help="COMMAND: apply gaussian blur and write image data to PNG in column number N, using OpenCV GaussianBlur(). new files are named \"<old_base_filename>_ocv_gaussian_blur.png\"")
+        parser.add_argument("--image-ocv-median-blur", metavar="N", type=int,
+                help="COMMAND: apply median blur and write image data to PNG in column number N, using OpenCV medianBlur(). new files are named \"<old_base_filename>_ocv_median_blur.png\"")
+        parser.add_argument("--image-ocv-bilateral-filter", metavar="N", type=int,
+                help="COMMAND: apply bilateral filter and write image data to PNG in column number N, using OpenCV bilateralFilter(). new files are named \"<old_base_filename>_ocv_bilateral_filter.png\"")
+        parser.add_argument("--image-ocv-canny", metavar="N", type=int,
+                help="COMMAND: apply canny edge detector and write image data to PNG in column number N, using OpenCV Canny(). new files are named \"<old_base_filename>_ocv_canny.png\"")
+        parser.add_argument("--image-ocv-contours", metavar="N", type=int,
+                help="COMMAND: apply contour detecton and write image data to PNG in column number N, using OpenCV findContours(). new files are named \"<old_base_filename>_ocv_contours.png\"")
+        parser.add_argument("--image-ocv-sift", metavar="N", type=int,
+                help="COMMAND: apply sift feature detection and write image data to PNG in column number N, using OpenCV sift(). new files are named \"<old_base_filename>_ocv_sift.png\"")
+        parser.add_argument("--image-ocv-surf", metavar="N", type=int,
+                help="COMMAND: apply surf feature detection and write image data to PNG in column number N, using OpenCV surf(). new files are named \"<old_base_filename>_ocv_surf.png\"")
+        parser.add_argument("--image-ocv-fast", metavar="N", type=int,
+                help="COMMAND: apply fast feature detection and write image data to PNG in column number N, using OpenCV fast(). new files are named \"<old_base_filename>_ocv_fast.png\"")
+
+
 
     args = parser.parse_args(remaining_argv)
 
@@ -294,7 +328,18 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
             args.image_90th is not None or \
             args.image_95th is not None or \
             args.image_99th is not None or \
-            args.image_joint is not None
+            args.image_joint is not None or \
+            args.image_ocv_grey is not None or \
+            args.image_ocv_box_blur is not None or \
+            args.image_ocv_gaussian_blur is not None or \
+            args.image_ocv_median_blur is not None or \
+            args.image_ocv_bilateral_filter is not None or \
+            args.image_ocv_canny is not None or \
+            args.image_ocv_contours is not None or \
+            args.image_ocv_sift is not None or \
+            args.image_ocv_surf is not None or \
+            args.image_ocv_fast is not None
+
 
         if image_command and no_command:
             if args.dietrich is None:
@@ -447,7 +492,157 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
                                                image.file_joint_entropy,
                                                n_components=0):
                         exit(ERROR_CODES.IMAGE_JOINT_FAILED)
-        
+                # image-ocv-grey
+                elif args.image_ocv_grey is not None:
+                    check_n(header, args.image_ocv_grey)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_grey,
+                                               relabel(
+                                                   "image ocv greyscale",
+                                                   args.label,
+                                                   True),
+                                               image.file_ocv_grey,
+                                               n_components=0):
+                        exit(ERROR_CODES.IMAGE_OCV_GRAY_FAILED)
+                # image-ocv-box-blur
+                elif args.image_ocv_box_blur is not None:
+                    check_n(header, args.image_ocv_box_blur)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_box_blur,
+                                               relabel(
+                                                   "image ocv box blur",
+                                                   args.label,
+                                                   True),
+                                               image.file_ocv_box_blur,
+                                               n_components=0):
+                        exit(ERROR_CODES.IMAGE_OCV_BOX_BLUR_FAILED)
+                # image-ocv-gaussian-blur
+                elif args.image_ocv_gaussian_blur is not None:
+                    check_n(header, args.image_ocv_gaussian_blur)
+                    #__gaussianblur = lambda x, y: image.file_ocv_gaussian_blur(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_gaussian_blur,
+                                               relabel(
+                                                    "image ocv gaussian blur",
+                                                    args.label,
+                                                    True),
+                                               image.file_ocv_gaussian_blur,
+                                               n_components=0):
+                                                #__gaussianblur):
+                        exit(ERROR_CODES.IMAGE_OCV_GAUSSIAN_BLUR_FAILED)
+                # image-ocv-median-blur
+                elif args.image_ocv_median_blur is not None:
+                    check_n(header, args.image_ocv_median_blur)
+                    #__medianblur = lambda x, y: image.file_ocv_median_blur(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_median_blur,
+                                               relabel(
+                                                    "image ocv median blur",
+                                                    args.label,
+                                                    True),
+                                               image.file_ocv_median_blur,
+                                               n_components=0):
+                                                #__medianblur):
+                        exit(ERROR_CODES.IMAGE_OCV_MEDIAN_BLUR_FAILED)
+                # image-ocv-bilateral-filter
+                elif args.image_ocv_bilateral_filter is not None:
+                    check_n(header, args.image_ocv_bilateral_filter)
+                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_bilateral_filter,
+                                               relabel(
+                                                    "image ocv bilateral filter",
+                                                    args.label,
+                                                    True),
+                                               image.file_ocv_bilateral_filter,
+                                               n_components=0):
+                                                #__bilateralfilter):
+                        exit(ERROR_CODES.IMAGE_OCV_BILATERAL_FILTER_FAILED)
+                # image-ocv-canny
+                elif args.image_ocv_canny is not None:
+                    check_n(header, args.image_ocv_canny)
+                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_canny,
+                                               relabel(
+                                                    "image ocv canny",
+                                                    args.label,
+                                                    True),
+                                                image.file_ocv_canny,
+                                                n_components=0):
+                                        #__bilateralfilter):
+                        exit(ERROR_CODES.IMAGE_OCV_CANNY_FAILED)
+                # image-ocv-contours
+                elif args.image_ocv_contours is not None:
+                    check_n(header, args.image_ocv_contours)
+                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_contours,
+                                               relabel(
+                                                    "image ocv contours",
+                                                    args.label,
+                                                    True),
+                                                image.file_ocv_contours,
+                                                n_components=0):
+                                                #__bilateralfilter):
+                        exit(ERROR_CODES.IMAGE_OCV_CONTOURS_FAILED)
+                # image-ocv-sift
+                elif args.image_ocv_sift is not None:
+                    check_n(header, args.image_ocv_sift)
+                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                                args.image_ocv_sift,
+                                                relabel(
+                                                    "image ocv sift",
+                                                    args.label,
+                                                    True),
+                                                image.file_ocv_sift,
+                                                n_components=0):
+                                        #__bilateralfilter):
+                        exit(ERROR_CODES.IMAGE_OCV_SIFT_FAILED)
+                # image-ocv-surf
+                elif args.image_ocv_surf is not None:
+                    check_n(header, args.image_ocv_surf)
+                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                                args.image_ocv_surf,
+                                                relabel(
+                                                    "image ocv surf",
+                                                    args.label,
+                                                    True),
+                                                image.file_ocv_surf,
+                                                n_components=0):
+                                        #__bilateralfilter):
+                        exit(ERROR_CODES.IMAGE_OCV_SURF_FAILED)
+                # image-ocv-fast
+                elif args.image_ocv_fast is not None:
+                    check_n(header, args.image_ocv_fast)
+                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
+                    if d_image.file_add_column(args.dietrich,
+                                               args.image_ocv_fast,
+                                               relabel(
+                                                    "image ocv fast",
+                                                    args.label,
+                                                    True),
+                                               image.file_ocv_fast,
+                                               n_components=0):
+                                        #__bilateralfilter):
+                        exit(ERROR_CODES.IMAGE_OCV_FAST_FAILED)
+#                # image-ocv-box-blur
+#                elif args.image_ocv_box_blur is not None:
+#                    check_n(header, args.image_ocv_box_blur)
+#                    __boxblur = lambda x, y: image.file_ocv_box_blur(x, y, 10)
+#                    if d_image.file_add_column(args.dietrich,
+#                                               args.image_ocv_box_blur,
+#                                               relabel(
+#                                                   "image ocv box blur",
+#                                                   args.label,
+#                                                   True),
+#                                               __boxblur):
+#                        exit(ERROR_CODES.IMAGE_OCV_BOX_BLUR_FAILED)
+
+
+
     # print help
     if no_command and not checked_db:
         log.warning("No command specified. Showing help.")
