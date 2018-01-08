@@ -204,24 +204,18 @@ class SpecD(unittest.TestCase):
 
     def test_sphere_proper_quoted(self):
         self.assertTrue(d.check_database(self.SPHERE_DATA, "proper_quoted.csv"))
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "proper_quoted_2.csv"))
 
     def test_sphere_improper_quoted_header(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_header.csv"))
-
-    def test_sphere_improper_quoted_row_1(self):
-        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_1.csv"))
-
-    def test_sphere_improper_quoted_row_2(self):
-        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_2.csv"))
-
-    def test_sphere_improper_quoted_header_alt(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_header_alt.csv"))
-
-    def test_sphere_improper_quoted_row_1_alt(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_1_alt.csv"))
-
-    def test_sphere_improper_quoted_row_2_alt(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_2_alt.csv"))
+
+
+    def test_sphere_improper_quoted_row(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_1.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "improper_quoted_row_2.csv"))
 
     def test_sphere_files(self):
         self.assertTrue(d.check_database(self.SPHERE_DATA, "files1.csv"))
@@ -230,7 +224,7 @@ class SpecD(unittest.TestCase):
         self.assertTrue(d.check_database(self.SPHERE_DATA, "files4.csv"))
         self.assertTrue(d.check_database(self.SPHERE_DATA, "files5.csv"))
 
-    def test_uniqueness(self):
+    def test_sphere_uniqueness(self):
         self.assertFalse(d.check_database(self.SPHERE_DATA, 
             "duplicate_header1.csv"))
         self.assertFalse(d.check_database(self.SPHERE_DATA, 
@@ -239,6 +233,21 @@ class SpecD(unittest.TestCase):
             "duplicate_header3.csv"))
         self.assertFalse(d.check_database(self.SPHERE_DATA, 
             "duplicate_header4.csv"))
+
+    def test_sphere_empty_header(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_header1.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_header2.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_header3.csv"))
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_header4.csv"))
+
+    def test_sphere_empty_types(self):
+        self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_types.csv"))
+
+    def test_sphere_newline_end(self):
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "newline_end.csv"))
+
+    def test_empty_data(self):
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "empty_data.csv"))
 
     def test_example1(self):
         self.assertTrue(d.check_database(self.EXAMPLE1_DATA))
@@ -335,6 +344,36 @@ class Convert(unittest.TestCase):
         self.assertTrue(fetch[0] == '-180/0.png')
         self.assertTrue(fetch[1] == '-162/0.png')
         self.assertTrue(fetch[2] == '-144/0.png')
+        os.unlink(self.d_csv)
+
+    def test_sqlite3_nulls(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        db = d.get_sqlite3(self.SPHERE_DATA, "empty_data.csv")
+        self.assertTrue(db != None)
+        log.info("Tables are:")
+        for row in db.execute("SELECT * FROM sqlite_master"):
+            log.info("{0}".format(row))
+        fetch = db.\
+          execute("SELECT COUNT(*) FROM %s" % self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 10)
+        fetch = db.execute("SELECT COUNT(*) FROM %s WHERE theta != 0" %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 0)
+        fetch = db.execute("SELECT COUNT(*) FROM %s WHERE theta is NULL" %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 4)
+        fetch = db.execute("SELECT COUNT(*) FROM %s WHERE phi = -180" %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 3)
+        fetch = db.execute("SELECT COUNT(*) FROM %s WHERE phi != -180" %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 2)
+        fetch = db.execute("SELECT COUNT(*) FROM %s WHERE phi is NULL" %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 5)
+        fetch = db.execute("SELECT COUNT(*) FROM %s WHERE FILE is NULL" %
+                self.SPHERE_TABLE).fetchone()
+        self.assertTrue(fetch[0] == 4)
         os.unlink(self.d_csv)
 
 class BackupD(unittest.TestCase):

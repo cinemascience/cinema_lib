@@ -52,10 +52,11 @@ def file_row_function(db_path, column_number, n_components,
         nans = (fill,) * n_components 
         def __row_function(row):
             try:
-                log.info("Performing \"{0}\" on \"{1}\"...".format(
-                    function_name, row[column_number]))
-                return tuple([str(i) for i in 
-                              image_function(db_path, row[column_number])])
+                if row[column_number] is not None:
+                    log.info("Performing \"{0}\" on \"{1}\"...".format(
+                        function_name, row[column_number]))
+                    return tuple([str(i) for i in 
+                                  image_function(db_path, row[column_number])])
             except Exception as e:
                 log.error("Unable to process row {0}: {1}".format(row, e))
                 return nans
@@ -63,9 +64,10 @@ def file_row_function(db_path, column_number, n_components,
     else:
         def __row_function(row):
             try:
-                log.info("Performing \"{0}\" on \"{1}\"...".format(
-                    function_name, row[column_number]))
-                return (str(image_function(db_path, row[column_number])),)
+                if row[column_number] is not None:
+                    log.info("Performing \"{0}\" on \"{1}\"...".format(
+                        function_name, row[column_number]))
+                    return (str(image_function(db_path, row[column_number])),)
             except Exception as e:
                 log.error("Unable to process row {0}: {1}".format(row, e))
                 return (fill,)
@@ -125,6 +127,8 @@ def file_add_column(db_path, column_number,
     next(data)
     row = next(data)
     im = io.imread(os.path.join(db_path, row[column_number]))
+    # close the file
+    del(data)
 
     if not (len(im.shape) == 2 or len(im.shape) == 3):
         log.error("Unsupported image dimensions: {0}.".format(im.shape))

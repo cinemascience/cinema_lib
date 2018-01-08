@@ -1,4 +1,8 @@
 TODOs:
+- check scikit-image version
+- check opencv version
+- integrate Divya's code
+- integrate Laura'a code
 - a command line tool test
 - start writing metadata (data.json)
 - --image-crop (mirror Laura's work)
@@ -14,5 +18,5 @@ TODOs:
 - upload to conda, pypi, and github
 - HDF5 to D conversion
 - SQLite to D conversion
-- Scoreboard (z-checker) commands
+- Scoreboard (z-checker like) commands
 - Stats on columns commands

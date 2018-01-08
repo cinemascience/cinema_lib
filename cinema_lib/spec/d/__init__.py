@@ -15,20 +15,107 @@ FILE_HEADER_KEYWORD = "FILE"
 TYPE_INTEGER = "INTEGER"
 TYPE_FLOAT = "FLOAT"
 TYPE_STRING = "STRING"
+TYPE_EMPTY = "EMPTY"
 CDB_TO_SQLITE3 = {
     TYPE_INTEGER: "INTEGER",
     TYPE_FLOAT: "REAL",
     TYPE_STRING: "TEXT"
     }
 
-# The python CSV reader mostly does RFC-4180 correctly on strict mode
-# EXCEPT it won't detect a " after comma and white-space. This checks it.
-def __python_rfc_4180_bug_check(row):
-    for col in row:
-        s = col.strip()
-        if len(s) > 0 and col != s and s[0] == '"':
-            return True
-    return False
+def __row_generator(f, strict=False):
+    row = [] 
+    quote_count = 0
+    quoted = False
+    column = ""
+    any_quotes = False
+
+    ch = f.read(1)
+    while ch != '':
+        # if we are in quoting mode
+        if quoted:
+            # if it's a double quote, toggle
+            if ch == '"':
+                if quote_count == 1:
+                    quote_count = 0
+                    column = column + ch
+                else:
+                    quote_count = 1
+            else:
+                # dangling quote
+                if quote_count == 1:
+                    # if it's a newline
+                    if ch == '\n':
+                        row.append(None) if len(column) == 0 and not any_quotes else row.append(column)
+                        yield row
+                        row = []
+                        column = ""
+                        any_quotes = False
+                    # if it's a comma
+                    elif ch == ',':
+                        row.append(None) if len(column) == 0 and not any_quotes else row.append(column)
+                        column = ""
+                        any_quotes = False
+                    # error, there's an odd number of quotes
+                    else:
+                        if strict:
+                            raise Exception("String found after closing quote.")
+                        else:
+                            pass
+
+                    # clear the quote
+                    quote_count = 0
+                    quoted = False
+                # append whatever character it is
+                else:
+                    column = column + ch
+        # quote previously seen
+        elif quote_count == 1:
+            # we enter into quoting mode
+            if len(column) == 0:
+                quoted = True
+                # append the character
+                if ch != '"':
+                    quote_count = 0
+                    column = column + ch
+                # if we have another quote, keep track
+                #else:
+                    #quote_count = 1
+            # error, we can't start quoting after existing string
+            else:
+                if strict:
+                    raise Exception("String found before opening quote.")
+                else:
+                    pass
+        # if it's a double-quote
+        elif ch == '"':
+            quote_count = 1
+            any_quotes = True
+        # if it's a newline
+        elif ch == '\n':
+            # only yield a row if there is content
+            if len(column) > 0 or len(row) > 0:
+                row.append(None) if len(column) == 0 and not any_quotes else row.append(column)
+                yield row
+            row = []
+            column = ""
+            any_quotes = False
+        # if it's a comma
+        elif ch == ',':
+            row.append(None) if len(column) == 0 and not any_quotes else row.append(column)
+            column = ""
+            any_quotes = False
+        # otherwise
+        else:
+            column = column + ch
+
+        # top of iteration
+        ch = f.read(1)
+
+    # if there are any leftovers
+    if len(row) > 0:
+        if len(column) > 0:
+            row.append(None) if len(column) == 0 and not any_quotes else row.append(column)
+        yield row
 
 def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
     """
@@ -66,22 +153,11 @@ def get_iterator(db_path, csv_path=SPEC_D_CSV_FILENAME, strict=False):
         # by default the Python CSV reader implements RFC-4180
         # with the exception that it doesn't detect double-quote after
         # comma and white-space (which is an error according to the spec)
-        wrapped = None
-        if strict:
-            def __wrapped(fn):
-                with open(fn, "r") as f:
-                    for row in csv.reader(f, strict=True, dialect='unix'):
-                        if __python_rfc_4180_bug_check(row):
-                            raise Exception("Unescaped double-quote appears after comma and white-space.")
-                        yield tuple(row)
-            wrapped = __wrapped
-        else:
-            def __wrapped(fn):
-                with open(fn, "r") as f:
-                    for row in csv.reader(f, dialect='unix'):
-                        yield tuple(row)
-            wrapped = __wrapped
-        return wrapped(fn)
+        def __wrapped(fn):
+            with open(fn, "r", encoding="utf-8") as f:
+                for row in __row_generator(f, strict):
+                    yield tuple(row)
+        return __wrapped(fn)
     else:
         return None
 
@@ -93,27 +169,30 @@ def typecheck(values, nans=[]):
         values : iterator of strings
     
     returns:
-        tuple of types (TYPE_INTEGER, TYPE_FLOAT, or TYPE_STRING)
+        tuple of types (TYPE_INTEGER, TYPE_FLOAT, TYPE_STRING, or TYPE_EMPTY)
     """
 
     types = []
     for v in values:
-        try:
-            test = int(v)
-            types.append(TYPE_INTEGER)
-        except:
+        if v == None:
+            types.append(TYPE_EMPTY)
+        else:
             try:
-                test = float(v.lower())
-                types.append(TYPE_FLOAT)
+                test = int(v)
+                types.append(TYPE_INTEGER)
             except:
-                types.append(TYPE_STRING)
+                try:
+                    test = float(v.lower())
+                    types.append(TYPE_FLOAT)
+                except:
+                    types.append(TYPE_STRING)
     return tuple(types)
 
 def typematch(row, types):
     """
     Given a row, will determine if the types match the header types,
-    accounting for NaNs. In particular, it will allow NaN to be OK
-    for both TYPE_STRING and TYPE_FLOAT.
+    accounting for NaNs and None. In particular, it will allow NaN to be OK
+    for both TYPE_STRING and TYPE_FLOAT, and None to be OK for all types.
 
     arguments:
         row : iterator of values
@@ -124,7 +203,8 @@ def typematch(row, types):
         True if the types match, False if not
     """
     return reduce(lambda x, y: x and y, 
-                  [t == h or (v.lower() == "nan" and h == TYPE_STRING)
+                  [(t == TYPE_EMPTY) or 
+                   (t == h) or (v.lower() == "nan" and h == TYPE_STRING)
                    for v, t, h in zip(row, typecheck(row), types)],
                   True)
 
@@ -208,7 +288,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
 
         # check if there is whitespace
         warn_whitespace = reduce(lambda x, y: x or (y[0] != y[1]),
-                                 zip(header, [i.strip() for i in header]),
+                                 zip(header, [i.strip() if i is not None else None for i in header]),
                                  False)
         if warn_whitespace:
             log.warning(
@@ -217,7 +297,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         # check if there is FILE with whitespace
         warn_file_whitespace = reduce(lambda x, y: x or 
                                       (is_file_column(y[1]) and (y[0] != y[1])),
-                                      zip(header, [i.strip() for i in header]),
+                                      zip(header, [i.strip() if i is not None else None for i in header]),
                                       False)
         if warn_file_whitespace:
             log.warning(
@@ -233,6 +313,11 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
         log.info("First data row is {0}.".format(row))
         types = typecheck(row)
         log.info("Data types are {0}.".format(types))
+
+        if TYPE_EMPTY in types:
+            log.error("First data row cannot have an empty value.")
+            header_error = True
+
         if len(types) != len(header):
             log.error(
                 "Number of columns in header and first row do not match.")
@@ -286,7 +371,7 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                     # check if there is whitespace
                     warn_whitespace = reduce(lambda x, y: x or (y[0] != y[1]),
                                              zip(row, 
-                                                 [i.strip() for i in row]),
+                                                 [i.strip() if i is not None else None for i in row]),
                                              False)
                     if warn_whitespace:
                         log.warning("On row #{0}: {1}".format(n_rows, row))
@@ -295,17 +380,19 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                     # check the files
                     for i in files:
                         if i < len(row):
-                            total_files = total_files + 1
-                            fn = os.path.join(db_path, row[i])
-                            if not os.path.isfile(fn):
-                                log.error("Error on row #{0}: {1}".format(n_rows, row)) 
-                                log.error("File \"{0}\" is missing.".format(fn))
-                                row_error = True
-                            else:
-                                n_files = n_files + 1
+                            if row[i] is not None:
+                                total_files = total_files + 1
+                                fn = os.path.join(db_path, row[i])
+                                if not os.path.isfile(fn):
+                                    log.error("Error on row #{0}: {1}".format(n_rows, row)) 
+                                    log.error("File \"{0}\" is missing.".format(fn))
+                                    row_error = True
+                                else:
+                                    n_files = n_files + 1
                         else:
                             log.error("Unable to check file on row #{0}, not enough columns.".format(n_rows))
                             row_error = True
+
                     # increment
                     n_rows = n_rows + 1
             except Exception as e:
