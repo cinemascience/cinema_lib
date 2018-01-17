@@ -33,7 +33,7 @@ def file_mean(db_path, image_path):
 
     return np.mean(io.imread(os.path.join(db_path, image_path)), (0, 1))
 
-def file_grey(db_path, image_path, suffix="_skimage_grey", file_ext="png"):
+def file_grey(db_path, image_path, suffix="_image_grey", file_ext="png"):
     """
     Generate the greyscale of an image file. Uses Scikit-image color
     rgb2grey for the conversion. Requires that the input image is RGB.
@@ -45,7 +45,7 @@ def file_grey(db_path, image_path, suffix="_skimage_grey", file_ext="png"):
         image_path : string
             relative POSIX path to an RGB image from the Cinema database
 
-        suffix : string = "_skimage_grey"
+        suffix : string = "_image_grey"
             a suffix string that is added to the original relative image
             path filename - WARNING: DO NOT MAKE IT "" (EMPTY STRING) OR
             YOU WILL POTENTIALLY OVERWRITE YOUR SOURCE IMAGES

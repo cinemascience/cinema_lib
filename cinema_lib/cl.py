@@ -219,7 +219,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     # add image tools
     if image_ok:
         parser.add_argument("--image-grey", metavar="N", type=int,
-                help="COMMAND: convert and write image data to greyscale PNG in column number N, using scikit-image color.rgb2grey. new files are named \"<old_base_filename>_grey.png\"")
+                help="COMMAND: convert and write image data to greyscale PNG in column number N, using scikit-image color.rgb2grey. new files are named \"<old_base_filename>_image_grey.png\"")
         parser.add_argument("--image-mean", metavar="N", type=int,
                 help="COMMAND: add image mean data calculated from images in column number N")
         parser.add_argument("--image-stddev", metavar="N", type=int,
@@ -548,7 +548,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                            "cv greyscale",
                                            args.label,
                                            True),
-                                       image.file_grey):
+                                       cv.file_grey):
                 exit(ERROR_CODES.CV_GREY_FAILED)
         # cv-box-blur
         elif args.cv_box_blur is not None:
@@ -559,7 +559,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                            "cv box blur",
                                            args.label,
                                            True),
-                                       image.file_box_blur):
+                                       cv.file_box_blur):
                 exit(ERROR_CODES.CV_BOX_BLUR_FAILED)
         # cv-gaussian-blur
         elif args.cv_gaussian_blur is not None:
@@ -570,7 +570,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv gaussian blur",
                                             args.label,
                                             True),
-                                       image.file_gaussian_blur):
+                                       cv.file_gaussian_blur):
                 exit(ERROR_CODES.CV_GAUSSIAN_BLUR_FAILED)
         # cv-median-blur
         elif args.cv_median_blur is not None:
@@ -581,7 +581,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv median blur",
                                             args.label,
                                             True),
-                                       image.file_median_blur):
+                                       cv.file_median_blur):
                 exit(ERROR_CODES.CV_MEDIAN_BLUR_FAILED)
         # cv-bilateral-filter
         elif args.cv_bilateral_filter is not None:
@@ -592,7 +592,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv bilateral filter",
                                             args.label,
                                             True),
-                                       image.file_bilateral_filter):
+                                       cv.file_bilateral_filter):
                 exit(ERROR_CODES.CV_BILATERAL_FILTER_FAILED)
         # cv-canny
         elif args.cv_canny is not None:
@@ -603,7 +603,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv canny",
                                             args.label,
                                             True),
-                                       image.file_canny):
+                                       cv.file_canny):
                 exit(ERROR_CODES.CV_CANNY_FAILED)
         # cv-contour-threshold
         elif args.cv_contour_threshold is not None:
@@ -614,7 +614,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv contour threshold",
                                             args.label,
                                             True),
-                                       image.file_contour_threshold):
+                                       cv.file_contour_threshold):
                 exit(ERROR_CODES.CV_CONTOUR_THRESHOLD_FAILED)
         # cv-fast-draw
         elif args.cv_fast_draw is not None:
@@ -625,7 +625,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv fast draw",
                                             args.label,
                                             True),
-                                       image.file_fast_draw):
+                                       cv.file_fast_draw):
                 exit(ERROR_CODES.CV_FAST_DRAW_FAILED)
 
     # computer vision contrib commands
@@ -655,7 +655,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv sift",
                                             args.label,
                                             True),
-                                        image.file_sift_draw):
+                                        cv.file_sift_draw):
                 exit(ERROR_CODES.CV_SIFT_DRAW_FAILED)
         # cv-surf-draw
         elif args.cv_surf_draw is not None:
@@ -666,7 +666,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv surf draw",
                                             args.label,
                                             True),
-                                        image.file_surf_draw):
+                                        cv.file_surf_draw):
                 exit(ERROR_CODES.CV_SURF_DRAW_FAILED)
 
     # print help
