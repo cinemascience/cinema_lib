@@ -518,7 +518,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     # computer vision commands
     if cv_ok and not command:
         from .cv import d as d_image 
-        from . import image
+        from . import cv
 
         # image command check
         command = \
@@ -631,7 +631,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     # computer vision contrib commands
     if cv_contrib_ok and not command:
         from .cv import d as d_image 
-        from . import image
+        from .cv import contrib
 
         # image command check
         command = \
@@ -655,7 +655,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv sift",
                                             args.label,
                                             True),
-                                        cv.file_sift_draw):
+                                        contrib.file_sift_draw):
                 exit(ERROR_CODES.CV_SIFT_DRAW_FAILED)
         # cv-surf-draw
         elif args.cv_surf_draw is not None:
@@ -666,7 +666,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                             "cv surf draw",
                                             args.label,
                                             True),
-                                        cv.file_surf_draw):
+                                        contrib.file_surf_draw):
                 exit(ERROR_CODES.CV_SURF_DRAW_FAILED)
 
     # print help
