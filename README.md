@@ -23,7 +23,10 @@ Minimum requirements are:
 - Python 3.6
 
 Optional requirements are:
-- Scikit-Image 0.13.1
+- numpy >=1.13
   - image capabilities
-- numpy 1.13
+  - OpenCV capabilities
+- scikit-image >=0.13.1
   - image capabilities
+- opencv-python >=3.4
+  - OpenCV capabilities

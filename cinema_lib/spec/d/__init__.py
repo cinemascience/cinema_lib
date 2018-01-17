@@ -643,3 +643,66 @@ def add_column_by_row_data(db_path, column_name, row_function,
 
     return add_columns_by_row_data(db_path, (column_name,), __row_function,
                                    csv_path)
+
+def file_row_function(db_path, column_number, n_components,
+                      function_name, file_function, fill):
+    """
+    Wraps a file function that calculates value(s) from a file, returning a 
+    tuple of strings. This is wrapping of functions meant to be able to be used 
+    in conjunction with add_columns_by_row_data. It will skip rows that have
+    null/None for the filename in the column column_number, and handle
+    exceptions by logging the error.
+
+    arguments:
+        db_path : string
+            POSIX path to Cinema database
+        column_number : integer
+            0-based index of the FILE column of images - all images need
+            to have the same number of components, n_components 
+            (i.e., greyscale, RGB, RGBA, etc.): N x M or N x M x n_components
+        n_components : integer >= 0
+            length of the return tuple from file_function. if it is 0,
+            it does not return a tuple, but a bare value
+        file_function : function(db_path : string, image_path : string) =>
+            tuple of n_components if n_components >= 1 else a value
+
+            i.e., a function that takes 2 arguments, the path to a Cinema
+            database and a relative path to a file. it returns a tuple
+            of values with length equal to n_components or just a value if 
+            n_components is 0
+        fill : string 
+            the value(s) to return if the file_function raises an exception
+
+    return:
+        a function of (row : tuple of strings) that returns a tuple of
+        strings
+
+    side effects:
+        whatever file_function does, in addition to logging information
+        or error data to the logger if file_function raises an error
+    """
+
+    if n_components > 0:
+        nans = (fill,) * n_components 
+        def __row_function(row):
+            try:
+                if row[column_number] is not None:
+                    log.info("Performing \"{0}\" on \"{1}\"...".format(
+                        function_name, row[column_number]))
+                    return tuple([str(i) for i in 
+                                  file_function(db_path, row[column_number])])
+            except Exception as e:
+                log.error("Unable to process row {0}: {1}".format(row, e))
+                return nans
+        return __row_function
+    else:
+        def __row_function(row):
+            try:
+                if row[column_number] is not None:
+                    log.info("Performing \"{0}\" on \"{1}\"...".format(
+                        function_name, row[column_number]))
+                    return (str(file_function(db_path, row[column_number])),)
+            except Exception as e:
+                log.error("Unable to process row {0}: {1}".format(row, e))
+                return (fill,)
+        return __row_function

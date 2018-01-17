@@ -32,18 +32,19 @@ class ERROR_CODES:
   IMAGE_95TH_FAILED = 21
   IMAGE_99TH_FAILED = 22
   IMAGE_JOINT_FAILED = 23
-  IMAGE_OCV_GRAY_FAILED = 24
-  IMAGE_OCV_BOX_BLUR_FAILED = 25
-  IMAGE_OCV_GAUSSIAN_BLUR_FAILED = 26
-  IMAGE_OCV_MEDIAN_BLUR_FAILED = 27
-  IMAGE_OCV_BILATERAL_FILTER_FAILED = 28
-  IMAGE_OCV_CANNY_FAILED = 29
-  IMAGE_OCV_CONTOURS_FAILED = 30
-  IMAGE_OCV_SIFT_FAILED = 31
-  IMAGE_OCV_SURF_FAILED = 32
-  IMAGE_OCV_FAST_FAILED = 33
+  CV_GREY_FAILED = 24
+  CV_BOX_BLUR_FAILED = 25
+  CV_GAUSSIAN_BLUR_FAILED = 26
+  CV_MEDIAN_BLUR_FAILED = 27
+  CV_BILATERAL_FILTER_FAILED = 28
+  CV_CANNY_FAILED = 29
+  CV_CONTOURS_FAILED = 30
+  CV_SIFT_FAILED = 31
+  CV_SURF_FAILED = 32
+  CV_FAST_FAILED = 33
+  NO_INPUT_DATABASE_FOR_CV_COMMAND = 34
 
-
+# if the user provides a new label, override the default
 def relabel(default, user, is_file=False):
     if is_file:
         if user == None:
@@ -56,6 +57,7 @@ def relabel(default, user, is_file=False):
         else:
             return user
 
+# verify that the input column (N) is ok 
 def check_n(header, n):
     if n >= len(header):
         log.error("N ({0}) is greater or equal to the number of columns in input database ({1}).".format(n, len(header)))
@@ -69,7 +71,6 @@ def main():
     from . import spec
     from .spec import a
     from . import version
-    import cv2
     import argparse
     import configparser
     import textwrap
@@ -90,16 +91,12 @@ def main():
 - Only one COMMAND can be run at a time.
 - VALIDATE and FLAG can be run in conjunction with COMMAND or independently.\n\n
 """)
-    # try scikit-image
-    skimage_ok = False
-    try:
-        import skimage
-        import numpy
-        import cv2
-        skimage_ok = True
 
-        from . import check_numpy_version
-        check_numpy_version(numpy)
+    # try image
+    image_ok = False
+    try:
+        from . import image
+        image_ok = True
 
         epilog_text += textwrap.dedent(
 """
@@ -116,8 +113,40 @@ def main():
     except Exception as e:
         epilog_text += textwrap.dedent(
         """
-        Image functionality unavailable. Scikit-image and numpy required: 
+        Image functionality unavailable. scikit-image and numpy required: 
         """ + str(e) + "\n\n")
+
+    # try cv
+    cv_ok = False
+    try:
+        from . import cv
+        cv_ok = True
+        epilog_text += textwrap.dedent(
+"""
+- Computer vision functions require that the input database is Spec D. The 
+  database (data.csv) will be backed up prior to running the command. Backup 
+  files can be found in the database directory as "data_csv.<timestamp>.<md5 
+  hash>".
+""")
+    except Exception as e:
+        epilog_text += textwrap.dedent(
+        """
+        Computer vision functionality unavailable. opencv-python and numpy 
+        required: 
+        """ + str(e) + "\n\n")
+
+    # try cv contrib
+    cv_contrib_ok = False
+    if cv_ok:
+        try:
+            from .cv import contrib
+            cv_contrib_ok = True
+        except Exception as e:
+            epilog_text += textwrap.dedent(
+            """
+            Computer vision contrib extras unavailable. opencv-contrib-python 
+            and numpy required: 
+            """ + str(e) + "\n\n")
 
     # examples
     epilog_text += textwrap.dedent(
@@ -133,14 +162,25 @@ $ cinema -t --a2d -a cinema_lib/test/data/sphere.cdb
     validate a Spec A database and convert it to a Spec D database\n\n
 """)
 
-    if skimage_ok:
+    if image_ok:
         epilog_text += textwrap.dedent(
 """
 Image examples:
 $ cinema -d cinema_lib/test/data/sphere.cdb --image-grey 2
     convert RGB images to greyscale images
 $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
-    calculate the average color per component in images, naming them average
+    calculate the average color per component in images, naming the column
+    "average"
+""")
+
+    if cv_ok:
+        epilog_text += textwrap.dedent(
+"""
+Computer vision examples:
+$ cinema -d cinema_lib/test/data/sphere.cdb --cv-gaussian-blur 2
+    convert apply a Gaussian blur to images
+$ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
+    draw locations of FAST features in images, naming the column "FILE FAST"
 """)
 
     # Don't surpress add_help here so it will handle -h
@@ -153,7 +193,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
         epilog=textwrap.dedent(epilog_text)
         )
 
-    # parser.set_defaults(**defaults)
+    # base arguments
     parser.add_argument("--version", action="version", version=str(CL_VERSION))
     parser.add_argument("-v", "--verbose", action="store_true", default=False,
             help="FLAG: report verbosely")
@@ -175,10 +215,11 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
     parser.add_argument("--d2s", "--dietrichtosqlite", action="store_true", 
         default=False,
         help="COMMAND: create a SQLite3 database from a Spec D database, to ./<database_name>.db")
-    # add skimage tools
-    if skimage_ok:
+
+    # add image tools
+    if image_ok:
         parser.add_argument("--image-grey", metavar="N", type=int,
-                help="COMMAND: convert and write image data to greyscale PNG in column number N, using Scikit-image color.rgb2grey. new files are named \"<old_base_filename>_grey.png\"")
+                help="COMMAND: convert and write image data to greyscale PNG in column number N, using scikit-image color.rgb2grey. new files are named \"<old_base_filename>_grey.png\"")
         parser.add_argument("--image-mean", metavar="N", type=int,
                 help="COMMAND: add image mean data calculated from images in column number N")
         parser.add_argument("--image-stddev", metavar="N", type=int,
@@ -203,29 +244,34 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
                 help="command: add the 95th percentile data calculated from images in column number N")
         parser.add_argument("--image-99th", metavar="N", type=int,
                 help="command: add the 99th percentile data calculated from images in column number N")
-        parser.add_argument("--image-ocv-grey", metavar="N", type=int,
-                help="COMMAND: convert and write image data to greyscale PNG in column number N, using OpenCV cvtColor(). new files are named \"<old_base_filename>_ocv_grey.png\"")
-        parser.add_argument("--image-ocv-box-blur", metavar="N", type=int,
-                help="COMMAND: apply box blur and write image data to PNG in column number N, using OpenCV blur(). new files are named \"<old_base_filename>_ocv_box_blur.png\"")
-        parser.add_argument("--image-ocv-gaussian-blur", metavar="N", type=int,
-                help="COMMAND: apply gaussian blur and write image data to PNG in column number N, using OpenCV GaussianBlur(). new files are named \"<old_base_filename>_ocv_gaussian_blur.png\"")
-        parser.add_argument("--image-ocv-median-blur", metavar="N", type=int,
-                help="COMMAND: apply median blur and write image data to PNG in column number N, using OpenCV medianBlur(). new files are named \"<old_base_filename>_ocv_median_blur.png\"")
-        parser.add_argument("--image-ocv-bilateral-filter", metavar="N", type=int,
-                help="COMMAND: apply bilateral filter and write image data to PNG in column number N, using OpenCV bilateralFilter(). new files are named \"<old_base_filename>_ocv_bilateral_filter.png\"")
-        parser.add_argument("--image-ocv-canny", metavar="N", type=int,
-                help="COMMAND: apply canny edge detector and write image data to PNG in column number N, using OpenCV Canny(). new files are named \"<old_base_filename>_ocv_canny.png\"")
-        parser.add_argument("--image-ocv-contours", metavar="N", type=int,
-                help="COMMAND: apply contour detecton and write image data to PNG in column number N, using OpenCV findContours(). new files are named \"<old_base_filename>_ocv_contours.png\"")
-        parser.add_argument("--image-ocv-sift", metavar="N", type=int,
-                help="COMMAND: apply sift feature detection and write image data to PNG in column number N, using OpenCV sift(). new files are named \"<old_base_filename>_ocv_sift.png\"")
-        parser.add_argument("--image-ocv-surf", metavar="N", type=int,
-                help="COMMAND: apply surf feature detection and write image data to PNG in column number N, using OpenCV surf(). new files are named \"<old_base_filename>_ocv_surf.png\"")
-        parser.add_argument("--image-ocv-fast", metavar="N", type=int,
-                help="COMMAND: apply fast feature detection and write image data to PNG in column number N, using OpenCV fast(). new files are named \"<old_base_filename>_ocv_fast.png\"")
 
+    # add cv2 tools
+    if cv_ok:
+        parser.add_argument("--cv-grey", metavar="N", type=int,
+                help="COMMAND: convert and write image data to greyscale PNG in column number N, using OpenCV cvtColor. new files are named \"<old_base_filename>_cv_grey.png\"")
+        parser.add_argument("--cv-box-blur", metavar="N", type=int,
+                help="COMMAND: apply box blur to image data in column number N. new files are named \"<old_base_filename>_cv_box_blur.png\"")
+        parser.add_argument("--cv-gaussian-blur", metavar="N", type=int,
+                help="COMMAND: apply Gaussian blur to image data in column number N. new files are named \"<old_base_filename>_cv_gaussian_blur.png\"")
+        parser.add_argument("--cv-median-blur", metavar="N", type=int,
+                help="COMMAND: apply median blur to image data in column number N. new files are named \"<old_base_filename>_cv_median_blur.png\"")
+        parser.add_argument("--cv-bilateral-filter", metavar="N", type=int,
+                help="COMMAND: apply bilateral filter to image data in column number N. new files are named \"<old_base_filename>_cv_bilateral_filter.png\"")
+        parser.add_argument("--cv-canny", metavar="N", type=int,
+                help="COMMAND: apply Canny edge detector to image data in column number N. new files are named \"<old_base_filename>_cv_canny.png\"")
+        parser.add_argument("--cv-contour-threshold", metavar="N", type=int,
+                help="COMMAND: draw contours around image thresholds on image data in column number N. new files are named \"<old_base_filename>_cv_contour_threshold.png\"")
+        parser.add_argument("--cv-fast-draw", metavar="N", type=int,
+                help="COMMAND: draw FAST features on image data in column number N. new files are named \"<old_base_filename>_cv_fast_draw.png\"")
 
+    # add cv2 contrib tools
+    if cv_contrib_ok:
+        parser.add_argument("--cv-sift-draw", metavar="N", type=int,
+                help="COMMAND: draw SIFT features on image data in column number N. new files are named \"<old_base_filename>_cv_sift_draw.png\"")
+        parser.add_argument("--cv-surf-draw", metavar="N", type=int,
+                help="COMMAND: draw SURF features on image data in column number N. new files are named \"<old_base_filename>_cv_surf_draw.png\"")
 
+    # parse the rest of the args
     args = parser.parse_args(remaining_argv)
 
     # set up the proper reporting mode
@@ -237,9 +283,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
         log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', 
                         level=log.WARNING, datefmt='%I:%M:%S')
 
-    no_command = True
-    checked_db = False
     # validate databases
+    command = False
+    checked_db = False
     if args.test:
         if args.astaire is not None:
             if not a.check_database(args.astaire, quick=args.quick):
@@ -282,19 +328,19 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
             exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_VALIDATION)
 
     # convert A to D
-    if args.a2d and no_command:
+    if args.a2d and not command:
         if args.astaire is not None:
             if not spec.convert_a_to_d(args.astaire):
                 exit(ERROR_CODES.CONVERSION_FROM_A_TO_D_FAILED)
             else:
-                no_command = False
+                command = True
 
-        if no_command:
+        if command:
             log.error("Input database not specified for A to D conversion.")
             exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_A_TO_D_CONVERSION)
     
     # convert D to S
-    if args.d2s and no_command:
+    if args.d2s and not command:
         if args.dietrich is not None:
             if d.get_sqlite3(
                  args.d2s, where=os.path.splitext(
@@ -302,20 +348,20 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
                  os.path.dirname(args.d2s)))[0] + ".db") == None:
                 exit(ERROR_CODES.CONVERSION_FROM_D_TO_SQLITE_FAILED)
             else:
-                no_command = False
+                command = True
 
-        if no_command:
+        if command:
             log.error(
               "Input database not specified for D to SQLite conversion.")
             exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_D_TO_SQLITE_CONVERSION)
 
     # image commands
-    if skimage_ok:
-        from .image import d as d_image
+    if image_ok and not command:
+        from .image import d as d_image # TODO FIXME
         from . import image
 
         # image command check
-        image_command = \
+        command = \
             args.image_mean is not None or \
             args.image_grey is not None or \
             args.image_stddev is not None or \
@@ -328,325 +374,307 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
             args.image_90th is not None or \
             args.image_95th is not None or \
             args.image_99th is not None or \
-            args.image_joint is not None or \
-            args.image_ocv_grey is not None or \
-            args.image_ocv_box_blur is not None or \
-            args.image_ocv_gaussian_blur is not None or \
-            args.image_ocv_median_blur is not None or \
-            args.image_ocv_bilateral_filter is not None or \
-            args.image_ocv_canny is not None or \
-            args.image_ocv_contours is not None or \
-            args.image_ocv_sift is not None or \
-            args.image_ocv_surf is not None or \
-            args.image_ocv_fast is not None
+            args.image_joint is not None 
 
-
-        if image_command and no_command:
+        if command:
             if args.dietrich is None:
                 log.error(
                     "Input Spec D database not specified for image command.")
                 exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_IMAGE_COMMAND)
             else:
-                no_command = False
-
-                # check N
                 header = next(d.get_iterator(args.dietrich))
 
-                # image-mean
-                if args.image_mean is not None:
-                    check_n(header, args.image_mean)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_mean, 
-                                               relabel(
-                                                   "image mean", 
-                                                   args.label),
-                                               image.file_mean):
-                        exit(ERROR_CODES.IMAGE_MEAN_FAILED)
-                # image-grey
-                elif args.image_grey is not None:
-                    check_n(header, args.image_grey)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_grey,
-                                               relabel(
-                                                   "greyscale",
-                                                   args.label,
-                                                   True),
-                                               image.file_grey,
-                                               n_components=0):
-                        exit(ERROR_CODES.IMAGE_GREY_FAILED)
-                # image-stddev
-                elif args.image_stddev is not None:
-                    check_n(header, args.image_stddev)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_stddev, 
-                                               relabel(
-                                                   "image standard deviation",
-                                                   args.label),
-                                               image.file_stddev):
-                        exit(ERROR_CODES.IMAGE_STDDEV_FAILED)
-                # image-entropy
-                elif args.image_entropy is not None:
-                    check_n(header, args.image_entropy)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_entropy, 
-                                               relabel(
-                                                   "image shannon entropy",
-                                                   args.label),
-                                               image.file_shannon_entropy):
-                        exit(ERROR_CODES.IMAGE_ENTROPY_FAILED)
-                # image-unique
-                elif args.image_unique is not None:
-                    check_n(header, args.image_unique)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_unique, 
-                                               relabel(
-                                                   "image unique count",
-                                                   args.label),
-                                               image.file_unique_count,
-                                               n_components=0):
-                        exit(ERROR_CODES.IMAGE_UNIQUE_FAILED)
-                # image-canny
-                elif args.image_canny is not None:
-                    check_n(header, args.image_canny)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_canny, 
-                                               relabel(
-                                                   "image canny count",
-                                                   args.label),
-                                               image.file_canny_count):
-                        exit(ERROR_CODES.IMAGE_CANNY_FAILED)
-                # image-firstq
-                elif args.image_firstq is not None:
-                    check_n(header, args.image_firstq)
-                    __firstq = lambda x, y: image.file_percentile(x, y, 25)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_firstq, 
-                                               relabel(
-                                                   "image first quartile",
-                                                   args.label),
-                                               __firstq):
-                        exit(ERROR_CODES.IMAGE_FIRSTQ_FAILED)
-                # image-secondq
-                elif args.image_secondq is not None:
-                    check_n(header, args.image_secondq)
-                    __secondq = lambda x, y: image.file_percentile(x, y, 50)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_secondq, 
-                                               relabel(
-                                                   "image second quartile",
-                                                   args.label),
-                                               __secondq):
-                        exit(ERROR_CODES.IMAGE_SECONDQ_FAILED)
-                # image-thirdq
-                elif args.image_thirdq is not None:
-                    check_n(header, args.image_thirdq)
-                    __thirdq = lambda x, y: image.file_percentile(x, y, 75)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_thirdq, 
-                                               relabel(
-                                                   "image third quartile",
-                                                   args.label),
-                                               __thirdq):
-                        exit(ERROR_CODES.IMAGE_THIRDQ_FAILED)
-                # image-90th
-                elif args.image_90th is not None:
-                    check_n(header, args.image_90th)
-                    __90th = lambda x, y: image.file_percentile(x, y, 90)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_90th, 
-                                               relabel(
-                                                   "image 90th percentile",
-                                                   args.label),
-                                               __90th):
-                        exit(ERROR_CODES.IMAGE_90TH_FAILED)
-                # image-95th
-                elif args.image_95th is not None:
-                    check_n(header, args.image_95th)
-                    __95th = lambda x, y: image.file_percentile(x, y, 95)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_95th, 
-                                               relabel(
-                                                   "image 95th percentile",
-                                                   args.label),
-                                               __95th):
-                        exit(ERROR_CODES.IMAGE_95TH_FAILED)
-                # image-99th
-                elif args.image_99th is not None:
-                    check_n(header, args.image_99th)
-                    __99th = lambda x, y: image.file_percentile(x, y, 99)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_99th, 
-                                               relabel(
-                                                   "image 99th percentile",
-                                                   args.label),
-                                               __99th):
-                        exit(ERROR_CODES.IMAGE_99TH_FAILED)
-                # image-joint
-                elif args.image_joint is not None:
-                    check_n(header, args.image_joint)
-                    if d_image.file_add_column(args.dietrich, 
-                                               args.image_joint, 
-                                               relabel(
-                                                   "image joint entropy",
-                                                   args.label),
-                                               image.file_joint_entropy,
-                                               n_components=0):
-                        exit(ERROR_CODES.IMAGE_JOINT_FAILED)
-                # image-ocv-grey
-                elif args.image_ocv_grey is not None:
-                    check_n(header, args.image_ocv_grey)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_grey,
-                                               relabel(
-                                                   "image ocv greyscale",
-                                                   args.label,
-                                                   True),
-                                               image.file_ocv_grey,
-                                               n_components=0):
-                        exit(ERROR_CODES.IMAGE_OCV_GRAY_FAILED)
-                # image-ocv-box-blur
-                elif args.image_ocv_box_blur is not None:
-                    check_n(header, args.image_ocv_box_blur)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_box_blur,
-                                               relabel(
-                                                   "image ocv box blur",
-                                                   args.label,
-                                                   True),
-                                               image.file_ocv_box_blur,
-                                               n_components=0):
-                        exit(ERROR_CODES.IMAGE_OCV_BOX_BLUR_FAILED)
-                # image-ocv-gaussian-blur
-                elif args.image_ocv_gaussian_blur is not None:
-                    check_n(header, args.image_ocv_gaussian_blur)
-                    #__gaussianblur = lambda x, y: image.file_ocv_gaussian_blur(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_gaussian_blur,
-                                               relabel(
-                                                    "image ocv gaussian blur",
-                                                    args.label,
-                                                    True),
-                                               image.file_ocv_gaussian_blur,
-                                               n_components=0):
-                                                #__gaussianblur):
-                        exit(ERROR_CODES.IMAGE_OCV_GAUSSIAN_BLUR_FAILED)
-                # image-ocv-median-blur
-                elif args.image_ocv_median_blur is not None:
-                    check_n(header, args.image_ocv_median_blur)
-                    #__medianblur = lambda x, y: image.file_ocv_median_blur(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_median_blur,
-                                               relabel(
-                                                    "image ocv median blur",
-                                                    args.label,
-                                                    True),
-                                               image.file_ocv_median_blur,
-                                               n_components=0):
-                                                #__medianblur):
-                        exit(ERROR_CODES.IMAGE_OCV_MEDIAN_BLUR_FAILED)
-                # image-ocv-bilateral-filter
-                elif args.image_ocv_bilateral_filter is not None:
-                    check_n(header, args.image_ocv_bilateral_filter)
-                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_bilateral_filter,
-                                               relabel(
-                                                    "image ocv bilateral filter",
-                                                    args.label,
-                                                    True),
-                                               image.file_ocv_bilateral_filter,
-                                               n_components=0):
-                                                #__bilateralfilter):
-                        exit(ERROR_CODES.IMAGE_OCV_BILATERAL_FILTER_FAILED)
-                # image-ocv-canny
-                elif args.image_ocv_canny is not None:
-                    check_n(header, args.image_ocv_canny)
-                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_canny,
-                                               relabel(
-                                                    "image ocv canny",
-                                                    args.label,
-                                                    True),
-                                                image.file_ocv_canny,
-                                                n_components=0):
-                                        #__bilateralfilter):
-                        exit(ERROR_CODES.IMAGE_OCV_CANNY_FAILED)
-                # image-ocv-contours
-                elif args.image_ocv_contours is not None:
-                    check_n(header, args.image_ocv_contours)
-                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_contours,
-                                               relabel(
-                                                    "image ocv contours",
-                                                    args.label,
-                                                    True),
-                                                image.file_ocv_contours,
-                                                n_components=0):
-                                                #__bilateralfilter):
-                        exit(ERROR_CODES.IMAGE_OCV_CONTOURS_FAILED)
-                # image-ocv-sift
-                elif args.image_ocv_sift is not None:
-                    check_n(header, args.image_ocv_sift)
-                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                                args.image_ocv_sift,
-                                                relabel(
-                                                    "image ocv sift",
-                                                    args.label,
-                                                    True),
-                                                image.file_ocv_sift,
-                                                n_components=0):
-                                        #__bilateralfilter):
-                        exit(ERROR_CODES.IMAGE_OCV_SIFT_FAILED)
-                # image-ocv-surf
-                elif args.image_ocv_surf is not None:
-                    check_n(header, args.image_ocv_surf)
-                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                                args.image_ocv_surf,
-                                                relabel(
-                                                    "image ocv surf",
-                                                    args.label,
-                                                    True),
-                                                image.file_ocv_surf,
-                                                n_components=0):
-                                        #__bilateralfilter):
-                        exit(ERROR_CODES.IMAGE_OCV_SURF_FAILED)
-                # image-ocv-fast
-                elif args.image_ocv_fast is not None:
-                    check_n(header, args.image_ocv_fast)
-                    #__bilateralfilter = lambda x, y: image.file_ocv_bilateral_filter(x, y, 5)
-                    if d_image.file_add_column(args.dietrich,
-                                               args.image_ocv_fast,
-                                               relabel(
-                                                    "image ocv fast",
-                                                    args.label,
-                                                    True),
-                                               image.file_ocv_fast,
-                                               n_components=0):
-                                        #__bilateralfilter):
-                        exit(ERROR_CODES.IMAGE_OCV_FAST_FAILED)
-#                # image-ocv-box-blur
-#                elif args.image_ocv_box_blur is not None:
-#                    check_n(header, args.image_ocv_box_blur)
-#                    __boxblur = lambda x, y: image.file_ocv_box_blur(x, y, 10)
-#                    if d_image.file_add_column(args.dietrich,
-#                                               args.image_ocv_box_blur,
-#                                               relabel(
-#                                                   "image ocv box blur",
-#                                                   args.label,
-#                                                   True),
-#                                               __boxblur):
-#                        exit(ERROR_CODES.IMAGE_OCV_BOX_BLUR_FAILED)
+        # image-mean
+        if args.image_mean is not None:
+            check_n(header, args.image_mean)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_mean, 
+                                       relabel(
+                                           "image mean", 
+                                           args.label),
+                                       image.file_mean):
+                exit(ERROR_CODES.IMAGE_MEAN_FAILED)
+        # image-grey
+        elif args.image_grey is not None:
+            check_n(header, args.image_grey)
+            if d_image.file_add_column(args.dietrich,
+                                       args.image_grey,
+                                       relabel(
+                                           "image greyscale",
+                                           args.label,
+                                           True),
+                                       image.file_grey,
+                                       n_components=0,
+                                       fill=""):
+                exit(ERROR_CODES.IMAGE_GREY_FAILED)
+        # image-stddev
+        elif args.image_stddev is not None:
+            check_n(header, args.image_stddev)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_stddev, 
+                                       relabel(
+                                           "image standard deviation",
+                                           args.label),
+                                       image.file_stddev):
+                exit(ERROR_CODES.IMAGE_STDDEV_FAILED)
+        # image-entropy
+        elif args.image_entropy is not None:
+            check_n(header, args.image_entropy)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_entropy, 
+                                       relabel(
+                                           "image shannon entropy",
+                                           args.label),
+                                       image.file_shannon_entropy):
+                exit(ERROR_CODES.IMAGE_ENTROPY_FAILED)
+        # image-unique
+        elif args.image_unique is not None:
+            check_n(header, args.image_unique)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_unique, 
+                                       relabel(
+                                           "image unique count",
+                                           args.label),
+                                       image.file_unique_count,
+                                       n_components=0):
+                exit(ERROR_CODES.IMAGE_UNIQUE_FAILED)
+        # image-canny
+        elif args.image_canny is not None:
+            check_n(header, args.image_canny)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_canny, 
+                                       relabel(
+                                           "image canny count",
+                                           args.label),
+                                       image.file_canny_count):
+                exit(ERROR_CODES.IMAGE_CANNY_FAILED)
+        # image-firstq
+        elif args.image_firstq is not None:
+            check_n(header, args.image_firstq)
+            __firstq = lambda x, y: image.file_percentile(x, y, 25)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_firstq, 
+                                       relabel(
+                                           "image first quartile",
+                                           args.label),
+                                       __firstq):
+                exit(ERROR_CODES.IMAGE_FIRSTQ_FAILED)
+        # image-secondq
+        elif args.image_secondq is not None:
+            check_n(header, args.image_secondq)
+            __secondq = lambda x, y: image.file_percentile(x, y, 50)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_secondq, 
+                                       relabel(
+                                           "image second quartile",
+                                           args.label),
+                                       __secondq):
+                exit(ERROR_CODES.IMAGE_SECONDQ_FAILED)
+        # image-thirdq
+        elif args.image_thirdq is not None:
+            check_n(header, args.image_thirdq)
+            __thirdq = lambda x, y: image.file_percentile(x, y, 75)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_thirdq, 
+                                       relabel(
+                                           "image third quartile",
+                                           args.label),
+                                       __thirdq):
+                exit(ERROR_CODES.IMAGE_THIRDQ_FAILED)
+        # image-90th
+        elif args.image_90th is not None:
+            check_n(header, args.image_90th)
+            __90th = lambda x, y: image.file_percentile(x, y, 90)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_90th, 
+                                       relabel(
+                                           "image 90th percentile",
+                                           args.label),
+                                       __90th):
+                exit(ERROR_CODES.IMAGE_90TH_FAILED)
+        # image-95th
+        elif args.image_95th is not None:
+            check_n(header, args.image_95th)
+            __95th = lambda x, y: image.file_percentile(x, y, 95)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_95th, 
+                                       relabel(
+                                           "image 95th percentile",
+                                           args.label),
+                                       __95th):
+                exit(ERROR_CODES.IMAGE_95TH_FAILED)
+        # image-99th
+        elif args.image_99th is not None:
+            check_n(header, args.image_99th)
+            __99th = lambda x, y: image.file_percentile(x, y, 99)
+            if d_image.file_add_column(args.dietrich, 
+                                       args.image_99th, 
+                                       relabel(
+                                           "image 99th percentile",
+                                           args.label),
+                                       __99th):
+                exit(ERROR_CODES.IMAGE_99TH_FAILED)
 
+    # computer vision commands
+    if cv_ok and not command:
+        from .cv import d as d_image 
+        from . import image
 
+        # image command check
+        command = \
+            args.cv_grey is not None or \
+            args.cv_box_blur is not None or \
+            args.cv_gaussian_blur is not None or \
+            args.cv_median_blur is not None or \
+            args.cv_bilateral_filter is not None or \
+            args.cv_canny is not None or \
+            args.cv_contour_threshold is not None or \
+            args.cv_fast_draw is not None
+
+        if command:
+            if args.dietrich is None:
+                log.error(
+            "Input Spec D database not specified for computer vision command.")
+                exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_CV_COMMAND)
+            else:
+                header = next(d.get_iterator(args.dietrich))
+
+        # cv-grey
+        if args.cv_grey is not None:
+            check_n(header, args.cv_grey)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_grey,
+                                       relabel(
+                                           "cv greyscale",
+                                           args.label,
+                                           True),
+                                       image.file_grey):
+                exit(ERROR_CODES.CV_GREY_FAILED)
+        # cv-box-blur
+        elif args.cv_box_blur is not None:
+            check_n(header, args.cv_box_blur)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_box_blur,
+                                       relabel(
+                                           "cv box blur",
+                                           args.label,
+                                           True),
+                                       image.file_box_blur):
+                exit(ERROR_CODES.CV_BOX_BLUR_FAILED)
+        # cv-gaussian-blur
+        elif args.cv_gaussian_blur is not None:
+            check_n(header, args.cv_gaussian_blur)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_gaussian_blur,
+                                       relabel(
+                                            "cv gaussian blur",
+                                            args.label,
+                                            True),
+                                       image.file_gaussian_blur):
+                exit(ERROR_CODES.CV_GAUSSIAN_BLUR_FAILED)
+        # cv-median-blur
+        elif args.cv_median_blur is not None:
+            check_n(header, args.cv_median_blur)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_median_blur,
+                                       relabel(
+                                            "cv median blur",
+                                            args.label,
+                                            True),
+                                       image.file_median_blur):
+                exit(ERROR_CODES.CV_MEDIAN_BLUR_FAILED)
+        # cv-bilateral-filter
+        elif args.cv_bilateral_filter is not None:
+            check_n(header, args.cv_bilateral_filter)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_bilateral_filter,
+                                       relabel(
+                                            "cv bilateral filter",
+                                            args.label,
+                                            True),
+                                       image.file_bilateral_filter):
+                exit(ERROR_CODES.CV_BILATERAL_FILTER_FAILED)
+        # cv-canny
+        elif args.cv_canny is not None:
+            check_n(header, args.cv_canny)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_canny,
+                                       relabel(
+                                            "cv canny",
+                                            args.label,
+                                            True),
+                                       image.file_canny):
+                exit(ERROR_CODES.CV_CANNY_FAILED)
+        # cv-contour-threshold
+        elif args.cv_contour_threshold is not None:
+            check_n(header, args.cv_contour_threshold)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_contour_threshold,
+                                       relabel(
+                                            "cv contour threshold",
+                                            args.label,
+                                            True),
+                                       image.file_contour_threshold):
+                exit(ERROR_CODES.CV_CONTOUR_THRESHOLD_FAILED)
+        # cv-fast-draw
+        elif args.cv_fast_draw is not None:
+            check_n(header, args.cv_fast_draw)
+            if d_image.file_add_file_column(args.dietrich,
+                                       args.cv_fast_draw,
+                                       relabel(
+                                            "cv fast draw",
+                                            args.label,
+                                            True),
+                                       image.file_fast_draw):
+                exit(ERROR_CODES.CV_FAST_DRAW_FAILED)
+
+    # computer vision contrib commands
+    if cv_contrib_ok and not command:
+        from .cv import d as d_image 
+        from . import image
+
+        # image command check
+        command = \
+            args.cv_sift_draw is not None or \
+            args.cv_surf_draw is not None 
+
+        if command:
+            if args.dietrich is None:
+                log.error(
+            "Input Spec D database not specified for computer vision command.")
+                exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_CV_COMMAND)
+            else:
+                header = next(d.get_iterator(args.dietrich))
+
+        # cv-sift-draw
+        if args.cv_sift_draw is not None:
+            check_n(header, args.cv_sift_draw)
+            if d_image.file_add_file_column(args.dietrich,
+                                        args.cv_sift_draw,
+                                        relabel(
+                                            "cv sift",
+                                            args.label,
+                                            True),
+                                        image.file_sift_draw):
+                exit(ERROR_CODES.CV_SIFT_DRAW_FAILED)
+        # cv-surf-draw
+        elif args.cv_surf_draw is not None:
+            check_n(header, args.cv_surf_draw)
+            if d_image.file_add_file_column(args.dietrich,
+                                        args.cv_surf_draw,
+                                        relabel(
+                                            "cv surf draw",
+                                            args.label,
+                                            True),
+                                        image.file_surf_draw):
+                exit(ERROR_CODES.CV_SURF_DRAW_FAILED)
 
     # print help
-    if no_command and not checked_db:
+    if not command and not checked_db:
         log.warning("No command specified. Showing help.")
         parser.print_help()
+
+    exit(0)
 
 if __name__ == "__main__":
     main()

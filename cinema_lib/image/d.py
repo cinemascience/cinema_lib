@@ -9,70 +9,6 @@ from skimage import io
 import os
 import logging as log
 
-def file_row_function(db_path, column_number, n_components,
-                      function_name, image_function, fill):
-    """
-    Wraps an image function that calculates value(s) from an image file, 
-    returning a tuple of strings for the values per component. This is wrapping
-    of functions meant to be able to be used in conjunction with
-    cinema.spec.d.add_columns_by_row_data.
-
-    arguments:
-        db_path : string
-            POSIX path to Cinema database
-        column_number : integer
-            0-based index of the FILE column of images - all images need
-            to have the same number of components, n_components 
-            (i.e., greyscale, RGB, RGBA, etc.): N x M or N x M x n_components
-        n_components : integer >= 0
-            length of the return tuple from image_function. if it is 0,
-            it does not return a tuple, but a bare value
-        image_function : function(db_path : string, image_path : string) =>
-            tuple of n_components if n_components >= 1 else a value
-
-                a function that takes 2 arguments, the path to a Cinema
-            database and a relative path to an image. it returns a tuple
-            of values with length equal to the number of components of the 
-            input image if n_components is None, otherwise it returns
-            a tuple of values of length specified by n_components 
-            (or just a value if n_components is 0)
-        fill : string 
-            the value to return if the image_function raises an exception
-
-    return:
-        a function of (row : tuple of strings) that returns a tuple of
-        strings
-
-    side effects:
-        whatever image_function does, in addition to logging information
-        or error data to the logger if image_function raises an error
-    """
-
-    if n_components > 0:
-        nans = (fill,) * n_components 
-        def __row_function(row):
-            try:
-                if row[column_number] is not None:
-                    log.info("Performing \"{0}\" on \"{1}\"...".format(
-                        function_name, row[column_number]))
-                    return tuple([str(i) for i in 
-                                  image_function(db_path, row[column_number])])
-            except Exception as e:
-                log.error("Unable to process row {0}: {1}".format(row, e))
-                return nans
-        return __row_function
-    else:
-        def __row_function(row):
-            try:
-                if row[column_number] is not None:
-                    log.info("Performing \"{0}\" on \"{1}\"...".format(
-                        function_name, row[column_number]))
-                    return (str(image_function(db_path, row[column_number])),)
-            except Exception as e:
-                log.error("Unable to process row {0}: {1}".format(row, e))
-                return (fill,)
-        return __row_function
-
 # TODO rename to columns
 def file_add_column(db_path, column_number, 
                     function_name, image_function,
@@ -149,9 +85,9 @@ def file_add_column(db_path, column_number,
 
     # iterate over the rows
     d.add_columns_by_row_data(db_path, column_names,
-      file_row_function(db_path, column_number, n_components, 
-                        function_name, image_function, fill), 
-                        csv_path=csv_path)
+      d.file_row_function(db_path, column_number, n_components, 
+                          function_name, image_function, fill), 
+                          csv_path=csv_path)
     return False
 
 

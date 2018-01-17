@@ -1,9 +1,9 @@
 TODOs:
 - check scikit-image version
 - check opencv version
-- integrate Divya's code
-- integrate Laura'a code
-- a command line tool test
+- test file row function
+- test null file processing
+- integrate Laura's code
 - start writing metadata (data.json)
 - --image-crop (mirror Laura's work)
 - --image-centroid (mirror Laura's work)
@@ -12,6 +12,7 @@ TODOs:
 - --error-codes to list error codes
 - --filetypes to list filetypes in a FILE column
 - --query to perform a SQL query
+- many more command line tests
 - conda packaging
 - continuous integration
 - D to A conversion

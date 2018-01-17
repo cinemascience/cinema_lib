@@ -1,5 +1,5 @@
 """
-Unit/regression testing for clib.
+Unit/regression testing for cinema_lib.
 """
 
 from ..spec import a
@@ -28,7 +28,7 @@ def unittest_verbosity():
 
 class SpecA(unittest.TestCase):
     """
-    Tests for the clib.spec.a module.
+    Tests for the cinema_lib.spec.a module.
 
     check_database will check most of the functionality found within
     the spec A, because it uses get_iterator and get_dictionary.
@@ -122,7 +122,7 @@ class SpecA(unittest.TestCase):
 
 class SpecD(unittest.TestCase):
     """
-    Tests for the clib.spec.d module.
+    Tests for the cinema_lib.spec.d module.
 
     check_database will check most of the functionality found within
     the spec D, because it uses get_iterator.
@@ -266,7 +266,7 @@ class SpecD(unittest.TestCase):
 
 class Convert(unittest.TestCase):
     """
-    Conversion tests for the clib.spec module.
+    Conversion tests for the cinema_lib.spec module.
     """
 
     def setUp(self):
@@ -647,7 +647,6 @@ class ImageTests(unittest.TestCase):
 
     def test_file_add_column(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -712,7 +711,6 @@ class ImageTests(unittest.TestCase):
 
     def test_grey(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -765,7 +763,6 @@ class ImageTests(unittest.TestCase):
 
     def test_mean(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -816,7 +813,6 @@ class ImageTests(unittest.TestCase):
 
     def test_stddev(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -868,7 +864,6 @@ class ImageTests(unittest.TestCase):
 
     def test_entropy(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -926,7 +921,6 @@ class ImageTests(unittest.TestCase):
 
     def test_unique(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -969,7 +963,6 @@ class ImageTests(unittest.TestCase):
 
     def test_canny(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -1018,7 +1011,6 @@ class ImageTests(unittest.TestCase):
 
     def test_percentile(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -1071,7 +1063,6 @@ class ImageTests(unittest.TestCase):
 
     def test_joint(self):
         try:
-            import skimage
             from .. import image
         except Exception as e:
             log.info("Unable to run test: " + str(e))
@@ -1114,4 +1105,956 @@ class ImageTests(unittest.TestCase):
 #                os.path.join(self.SOURCE_DATA, self.JOINT_DATA))
 
         os.unlink(self.d_csv)
+
+class OCVTests(unittest.TestCase):
+    """
+    OpenCV tests.
+    """
+
+    def setUp(self):
+        if unittest_verbosity() > 1:
+            log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
+                            level=log.DEBUG, datefmt='%I:%M:%S')
+        else:
+            log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
+                            level=60, datefmt='%I:%M:%S')
+
+        # copy files to tmp
+        self.SOURCE_DATA = os.path.join(TEST_PATH, "sphere.cdb")
+        self.TEMP_PATH = temp.mkdtemp()
+        self.SPHERE_DATA = os.path.join(self.TEMP_PATH, "sphere.cdb")
+        sh.copytree(self.SOURCE_DATA, self.SPHERE_DATA)
+        self.SPHERE_TABLE = "sphere"
+
+        # regression data
+        self.GREY_DATA = "cv_grey_data.csv"
+        self.BOX_BLUR_DATA = "cv_box_blur.csv"
+        self.GAUSSIAN_BLUR_DATA = "cv_gaussian_blur.csv"
+        self.MEDIAN_BLUR_DATA = "cv_median_blur.csv"
+        self.BILATERAL_FILTER_DATA = "cv_bilateral_filter.csv"
+        self.CANNY_DATA = "cv_canny.csv"
+        self.CONTOUR_THRESHOLD_DATA = "cv_contour_threshold.csv"
+        self.CONTOUR_THRESHOLD_COLOR_DATA = "cv_contour_threshold_color.csv"
+        self.SIFT_DRAW_DATA = "cv_sift_draw.csv"
+        self.SIFT_DRAW_COLOR_DATA = "cv_sift_draw_color.csv"
+        self.SURF_DRAW_DATA = "cv_surf_draw.csv"
+        self.SURF_DRAW_COLOR_DATA = "cv_surf_draw_color.csv"
+        self.FAST_DRAW_DATA = "cv_fast_draw.csv"
+        self.FAST_DRAW_COLOR_DATA = "cv_fast_draw_color.csv"
+      
+        # make some backups
+        self.a_json = os.path.join(self.SPHERE_DATA, a.SPEC_A_JSON_FILENAME)
+        self.d_csv = os.path.join(self.SPHERE_DATA, d.SPEC_D_CSV_FILENAME)
+        self.d_backup = os.path.join(self.SPHERE_DATA, "csv.good")
+        sh.copyfile(self.d_csv, self.d_backup)
+        os.unlink(self.d_csv)
+
+    def tearDown(self):
+        sh.rmtree(self.SPHERE_DATA)
+
+    def test_grey(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_grey(self.SPHERE_DATA, row[-1], suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE greyscale", cv.file_grey))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", "FILE greyscale"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.GREY_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, self.GREY_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_box_blur(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_box_blur(self.SPHERE_DATA, row[-1], suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE box blur", cv.file_box_blur))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", "FILE box blur"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.BOX_BLUR_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.BOX_BLUR_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_gaussian_blur(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_gaussian_blur(self.SPHERE_DATA, row[-1], suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE gaussian blur", cv.file_gaussian_blur))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE gaussian blur"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.GAUSSIAN_BLUR_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.GAUSSIAN_BLUR_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_median_blur(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_median_blur(self.SPHERE_DATA, row[-1], suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE median blur", cv.file_median_blur))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE median blur"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.MEDIAN_BLUR_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.MEDIAN_BLUR_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_bilateral_filter(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_bilateral_filter(self.SPHERE_DATA, row[-1], suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE bilateral filter", cv.file_bilateral_filter))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE bilateral filter"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.BILATERAL_FILTER_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.BILATERAL_FILTER_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_canny(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_canny(self.SPHERE_DATA, row[-1], suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE canny", cv.file_canny))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE canny"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.CANNY_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.CANNY_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_contour_threshold(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_contour_threshold(self.SPHERE_DATA, row[-1], 
+                        suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE contour threshold", cv.file_contour_threshold))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE contour threshold"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.CONTOUR_THRESHOLD_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.CONTOUR_THRESHOLD_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_contour_threshold_color(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_contour_threshold(self.SPHERE_DATA, row[-1], 
+                        suffix="_a", color=(255,0,0))
+            a_grey[row[-1]] = new_fn
+        
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE contour threshold color", 
+            lambda x, y: cv.file_contour_threshold(x, y, 
+                suffix="_cv_contour_threshold_color", color=(255,0,0))))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE contour threshold color"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.CONTOUR_THRESHOLD_COLOR_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.CONTOUR_THRESHOLD_COLOR_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_sift_draw(self):
+        try:
+            from ..cv import contrib
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from ..cv import contrib
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                contrib.file_sift_draw(self.SPHERE_DATA, row[-1], 
+                        suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE sift draw", contrib.file_sift_draw))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE sift draw"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.SIFT_DRAW_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.SIFT_DRAW_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_sift_draw_color(self):
+        try:
+            from ..cv import contrib
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from ..cv import contrib
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                contrib.file_sift_draw(self.SPHERE_DATA, row[-1], 
+                        suffix="_a", color=(255,0,0))
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE sift draw color", 
+            lambda x, y: contrib.file_sift_draw(x, y,
+                suffix="_cv_sift_draw_color", color=(255,0,0))))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE sift draw color"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.SIFT_DRAW_COLOR_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.SIFT_DRAW_COLOR_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_surf_draw(self):
+        try:
+            from ..cv import contrib
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from ..cv import contrib
+        from ..cv import d as d_image
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                contrib.file_surf_draw(self.SPHERE_DATA, row[-1], 
+                        suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE surf draw", contrib.file_surf_draw))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE surf draw"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.SURF_DRAW_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.SURF_DRAW_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_surf_draw_color(self):
+        try:
+            from ..cv import contrib
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from ..cv import contrib
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                contrib.file_surf_draw(self.SPHERE_DATA, row[-1], 
+                        suffix="_a", color=(255,0,0))
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE surf draw color", 
+            lambda x, y: contrib.file_surf_draw(x, y,
+                suffix="_cv_surf_draw_color", color=(255,0,0))))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE surf draw color"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.SURF_DRAW_COLOR_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.SURF_DRAW_COLOR_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_fast_draw(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_fast_draw(self.SPHERE_DATA, row[-1], 
+                        suffix="_a")
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE fast draw", cv.file_fast_draw))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE fast draw"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.FAST_DRAW_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.FAST_DRAW_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+    def test_fast_draw_color(self):
+        try:
+            from .. import cv
+        except Exception as e:
+            log.info("Unable to run test: " + str(e))
+            return
+      
+        from .. import cv
+        from ..cv import d as d_image 
+
+        sh.copyfile(self.d_backup, self.d_csv)
+        a_db = a.get_iterator(self.SPHERE_DATA)
+
+        next(a_db)
+        a_grey = {}
+        for row in a_db:
+            new_fn = \
+                cv.file_fast_draw(self.SPHERE_DATA, row[-1], 
+                        suffix="_a", color=(255,0,0))
+            a_grey[row[-1]] = new_fn
+
+        self.assertFalse(d_image.file_add_file_column(self.SPHERE_DATA, 2,
+            "FILE fast draw color", 
+            lambda x, y: cv.file_fast_draw(x, y,
+                suffix="_cv_fast_draw_color", color=(255,0,0))))
+
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertTrue(reduce(lambda x, y: x + 1, d_db, 0) == 21)
+        d_db = d.get_iterator(self.SPHERE_DATA)
+        self.assertEqual(next(d_db), ("theta", "phi", "FILE", 
+            "FILE fast draw color"))
+
+        regress = d.get_iterator(self.SOURCE_DATA, self.FAST_DRAW_COLOR_DATA)
+        next(regress)
+
+        for row, reg_row in zip(d_db, regress):
+            left = os.path.join(self.SPHERE_DATA, a_grey[row[2]])
+            right = os.path.join(self.SPHERE_DATA, row[3])
+            reg_image = os.path.join(self.SOURCE_DATA, reg_row[3])
+            self.assertTrue(filecmp.cmp(left, right, False))
+            self.assertEqual(row, reg_row)
+            self.assertTrue(filecmp.cmp(right, reg_image, False))
+
+        self.assertTrue(d.check_database(self.SPHERE_DATA))
+
+#        # uncomment when you want to regenerate the regression data
+#        sh.copyfile(self.d_csv, os.path.join(self.SOURCE_DATA, 
+#            self.FAST_DRAW_COLOR_DATA))
+#        regress = d.get_iterator(self.SPHERE_DATA)
+#        next(regress)
+#        for row in regress:
+#            sh.copyfile(os.path.join(self.SPHERE_DATA, row[3]),
+#                        os.path.join(self.SOURCE_DATA, row[3]))
+
+        os.unlink(self.d_csv)
+
+class CommandLineTests(unittest.TestCase):
+    """
+    Tests for the command line tool.
+    """
+
+    # TODO many more tests
+
+    def setUp(self):
+        if unittest_verbosity() > 1:
+            log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
+                            level=log.DEBUG, datefmt='%I:%M:%S')
+        else:
+            log.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
+                            level=60, datefmt='%I:%M:%S')
+
+        self.PYTHON_COMMAND = 'cl.py'
+        self.SPHERE_DATA = os.path.join(TEST_PATH, "sphere.cdb")
+
+    def test_no_args(self):
+        from .. import cl
+        import sys
+
+        # set arguments
+        arguments = [self.PYTHON_COMMAND]
+        old_argv = sys.argv
+        sys.argv = arguments 
+        exit_value = -1
+        # run command line
+        try:
+            cl.main()
+        except SystemExit as e:
+            exit_value = e
+        # assert we exited
+        self.assertTrue(int(str(exit_value)) == 0)
+        # swap back
+        sys.argv = old_argv
+    
+    def test_spec_a(self):
+        from .. import cl
+        import sys
+
+        # set arguments
+        arguments = [self.PYTHON_COMMAND, '-t', '-a', self.SPHERE_DATA]
+        old_argv = sys.argv
+        sys.argv = arguments 
+        exit_value = -1
+        # run command line
+        try:
+            cl.main()
+        except SystemExit as e:
+            exit_value = e
+        # assert we exited
+        self.assertTrue(int(str(exit_value)) == 0)
+        # swap back
+        sys.argv = old_argv
+
+    def test_spec_a_verbose(self):
+        from .. import cl
+        import sys
+
+        # set arguments
+        arguments = [self.PYTHON_COMMAND, '-tiv', '-a', self.SPHERE_DATA]
+        old_argv = sys.argv
+        sys.argv = arguments 
+        exit_value = -1
+        # run command line
+        try:
+            cl.main()
+        except SystemExit as e:
+            exit_value = e
+        # assert we exited
+        self.assertTrue(int(str(exit_value)) == 0)
+        # swap back
+        sys.argv = old_argv
+
+    def test_spec_a_failure(self):
+        from .. import cl
+        import sys
+
+        # set arguments
+        arguments = [self.PYTHON_COMMAND, '-t', '-a', '']
+        old_argv = sys.argv
+        sys.argv = arguments 
+        exit_value = -1
+        # run command line
+        try:
+            cl.main()
+        except SystemExit as e:
+            exit_value = e
+        # assert we exited
+        self.assertTrue(int(str(exit_value)) == 3)
+        # swap back
+        sys.argv = old_argv
+
+    def test_spec_d(self):
+        from .. import cl
+        import sys
+
+        # set arguments
+        arguments = [self.PYTHON_COMMAND, '-t', '-d', self.SPHERE_DATA]
+        old_argv = sys.argv
+        sys.argv = arguments 
+        exit_value = -1
+        # run command line
+        try:
+            cl.main()
+        except SystemExit as e:
+            exit_value = e
+        # assert we exited
+        self.assertTrue(int(str(exit_value)) == 0)
+        # swap back
+        sys.argv = old_argv
+
+    def test_spec_d_verbose(self):
+        from .. import cl
+        import sys
+
+        # set arguments
+        arguments = [self.PYTHON_COMMAND, '-tiv', '-d', self.SPHERE_DATA]
+        old_argv = sys.argv
+        sys.argv = arguments 
+        exit_value = -1
+        # run command line
+        try:
+            cl.main()
+        except SystemExit as e:
+            exit_value = e
+        # assert we exited
+        self.assertTrue(int(str(exit_value)) == 0)
+        # swap back
+        sys.argv = old_argv
+
+    def test_spec_d_failure(self):
+        from .. import cl
+        import sys
+
+        # set arguments
+        arguments = [self.PYTHON_COMMAND, '-t', '-d', '']
+        old_argv = sys.argv
+        sys.argv = arguments 
+        exit_value = -1
+        # run command line
+        try:
+            cl.main()
+        except SystemExit as e:
+            exit_value = e
+        # assert we exited
+        self.assertTrue(int(str(exit_value)) == 4)
+        # swap back
+        sys.argv = old_argv
 
