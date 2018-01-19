@@ -514,6 +514,17 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                                            args.label),
                                        __99th):
                 exit(ERROR_CODES.IMAGE_99TH_FAILED)
+        # image-joint
+        elif args.image_joint is not None:
+            check_n(header, args.image_joint)
+            if d_image.file_add_column(args.dietrich,
+                                       args.image_joint,
+                                       relabel(
+                                           "image joint entropy",
+                                           args.label),
+                                       image.file_joint_entropy,
+                                       n_components=0):
+                exit(ERROR_CODES.IMAGE_JOINT_FAILED)
 
     # computer vision commands
     if cv_ok and not command:
