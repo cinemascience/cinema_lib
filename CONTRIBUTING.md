@@ -36,11 +36,9 @@ Current set of rules for contributing to cinema_lib (as written by Jon W.):
    and cinema.spec.d for examples.
 9. We will merge changes into *master*, from *devel*, when we feel like we 
    want to cut a new feature stable version for release. Jon W. will do a 
-   merge-squash from *devel* to *master*. Please ask him if you'd like to 
+   merge --no-ff from *devel* to *master*. Please ask him if you'd like to 
    create a new feature stable version from the *devel* changes to update 
    *master*. As of this writing, there is no time-table for *master* updates.
-   "git checkout master ; git merge --squash -X theirs devel ; git diff
-   devel ; <fix any discrepencies between master and devel> ; git commit"
 
 Meta-development comments for those with merge rights (and information
 for non-git savvy LANL-ites):
