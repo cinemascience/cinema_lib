@@ -6,14 +6,14 @@ tool, *cinema*.
 
 To run the command line tool directly from the repository, after cloning:
 ```
-$ git clone https://github.com/lanl/cinema_lib.git
+$ git clone https://github.com/cinemascience/cinema_lib.git 
 $ cd cinema_lib
 $ ./cinema
 ```
 
 To install with *pip*:
 ```
-$ git clone https://github.com/lanl/cinema_lib.git
+$ git clone https://github.com/cinemascience/cinema_lib.git
 $ cd cinema_lib
 $ pip install .
 $ cinema
