@@ -214,7 +214,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
         help="COMMAND: convert a Spec D database to a Spec A database, in place")
     parser.add_argument("--d2s", "--dietrichtosqlite", action="store_true", 
         default=False,
-        help="COMMAND: create a SQLite3 database from a Spec D database, to ./<database_name>.db")
+        help="COMMAND: create a SQLite3 database from a Spec D database, to ./<database_name>.sqlite")
 
     # add image tools
     if image_ok:
@@ -343,14 +343,12 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     if args.d2s and not command:
         if args.dietrich is not None:
             if d.get_sqlite3(
-                 args.d2s, where=os.path.splitext(
-                 os.path.basename(
-                 os.path.dirname(args.d2s)))[0] + ".db") == None:
+                 args.dietrich, where=os.path.splitext(
+                 os.path.split(args.dietrich)[1])[0] + ".sqlite") == None:
                 exit(ERROR_CODES.CONVERSION_FROM_D_TO_SQLITE_FAILED)
             else:
                 command = True
-
-        if command:
+        else:
             log.error(
               "Input database not specified for D to SQLite conversion.")
             exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_D_TO_SQLITE_CONVERSION)
