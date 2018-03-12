@@ -43,6 +43,8 @@ class ERROR_CODES:
   CV_SURF_FAILED = 32
   CV_FAST_FAILED = 33
   NO_INPUT_DATABASE_FOR_CV_COMMAND = 34
+  CONVERSION_FROM_SQLITE_TO_D_FAILED = 35
+  NO_OUTPUT_DATABASE_FOR_SQLITE_TO_D_CONVERSION = 36
 
 # if the user provides a new label, override the default
 def relabel(default, user, is_file=False):
@@ -215,6 +217,9 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     parser.add_argument("--d2s", "--dietrichtosqlite", action="store_true", 
         default=False,
         help="COMMAND: create a SQLite3 database from a Spec D database, to ./<database_name>.sqlite")
+    parser.add_argument("--s2d", "--sqlitetodietrich", metavar="DB", type=str, 
+        default=False,
+        help='COMMAND: create a a Spec D database CSV from a SQLite database. If there is only one table, it converts that table, otherwise it converts a table or view named "cinema".')
 
     # add image tools
     if image_ok:
@@ -342,9 +347,10 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     # convert D to S
     if args.d2s and not command:
         if args.dietrich is not None:
-            if d.get_sqlite3(
-                 args.dietrich, where=os.path.splitext(
-                 os.path.split(args.dietrich)[1])[0] + ".sqlite") == None:
+            basename = os.path.split(os.path.normpath(args.dietrich))[1]
+            log.info('Using "{0}" for the table name.'.format(basename))
+            if d.get_sqlite3(args.dietrich, 
+                    where=os.path.splitext(basename)[0] + ".sqlite") == None:
                 exit(ERROR_CODES.CONVERSION_FROM_D_TO_SQLITE_FAILED)
             else:
                 command = True
@@ -352,6 +358,43 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
             log.error(
               "Input database not specified for D to SQLite conversion.")
             exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_D_TO_SQLITE_CONVERSION)
+
+    # convert S to D
+    if args.s2d and not command:
+        if args.dietrich is not None:
+            table = None
+            conn = None
+            try:
+                import sqlite3
+                conn = sqlite3.Connection(args.s2d)
+                cursor = conn.cursor()
+                tables = [row[0] for row in
+                    cursor.execute("select name from sqlite_master")]
+                if len(tables) < 1:
+                    log.error("No tables found in SQLite database.")
+                    exit(ERROR_CODES.CONVERSION_FROM_SQLITE_TO_D_FAILED)
+                if len(tables) == 1:
+                    table = tables[0]
+                else:
+                    if "cinema" not in tables:
+                        log.error(
+                        'No table or view named "cinema" in SQLite database.')
+                        exit(ERROR_CODES.CONVERSION_FROM_SQLITE_TO_D_FAILED)
+                    else:
+                        table = "cinema"
+            except Exception as e:
+                log.error("Unable to process SQLite database: {0}.".format(e))
+                exit(ERROR_CODES.CONVERSION_FROM_SQLITE_TO_D_FAILED)
+
+            log.info('Converting table "{0}".'.format(table))
+            if d.get_sqlite3_to_csv(conn, table, args.dietrich) == None:
+                exit(ERROR_CODES.CONVERSION_FROM_SQLITE_TO_D_FAILED)
+            else:
+                command = True
+        else:
+            log.error(
+              "Output database not specified for D to SQLite conversion.")
+            exit(ERROR_CODES.NO_OUTPUT_DATABASE_FOR_SQLITE_TO_D_CONVERSION)
 
     # image commands
     if image_ok and not command:

@@ -376,6 +376,85 @@ class Convert(unittest.TestCase):
         self.assertTrue(fetch[0] == 4)
         os.unlink(self.d_csv)
 
+    def test_sqlite3_to_csv(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        sqlite_db = d.get_sqlite3(self.SPHERE_DATA)
+        self.assertTrue(sqlite_db != None)
+        cinema_db = d.get_sqlite3_to_csv(sqlite_db, "sphere", self.SPHERE_DATA)
+        header = next(cinema_db)
+        cursor = sqlite_db.cursor()
+        self.assertEqual(header, tuple([row[1] for row in 
+            cursor.execute('pragma table_info(sphere)')]))
+        for a, b in zip(cinema_db, cursor.execute('select * from sphere')):
+            self.assertEqual(a, 
+                    tuple([str(i) if i != None else None for i in b]))
+
+        os.unlink(self.d_csv)
+
+    def test_sqlite3_to_csv_multiple_files(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        sqlite_db = d.get_sqlite3(self.SPHERE_DATA, "files4.csv")
+        self.assertTrue(sqlite_db != None)
+        cinema_db = d.get_sqlite3_to_csv(sqlite_db, "sphere", self.SPHERE_DATA)
+        header = next(cinema_db)
+        cursor = sqlite_db.cursor()
+        self.assertEqual(header, tuple([row[1] for row in 
+            cursor.execute('pragma table_info(sphere)')]))
+        for a, b in zip(cinema_db, cursor.execute('select * from sphere')):
+            self.assertEqual(a, 
+                    tuple([str(i) if i != None else None for i in b]))
+
+        os.unlink(self.d_csv)
+
+    def test_sqlite3_to_csv_nulls(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        sqlite_db = d.get_sqlite3(self.SPHERE_DATA, "empty_data.csv")
+        self.assertTrue(sqlite_db != None)
+        cinema_db = d.get_sqlite3_to_csv(sqlite_db, "sphere", self.SPHERE_DATA)
+        header = next(cinema_db)
+        cursor = sqlite_db.cursor()
+
+        self.assertEqual(header, tuple([row[1] for row in 
+            cursor.execute('pragma table_info(sphere)')]))
+        for a, b in zip(cinema_db, cursor.execute('select * from sphere')):
+            self.assertEqual(a, 
+                    tuple([str(i) if i != None else None for i in b]))
+
+        os.unlink(self.d_csv)
+
+    def test_sqlite3_to_csv_oo1(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        sqlite_db = d.get_sqlite3(self.SPHERE_DATA, "sqlite1.csv")
+        self.assertTrue(sqlite_db != None)
+        cinema_db = d.get_sqlite3_to_csv(sqlite_db, "sphere", self.SPHERE_DATA)
+        original = d.get_iterator(self.SPHERE_DATA, "files4.csv")
+        for a, b in zip(cinema_db, original):
+            self.assertEqual(a, b)
+
+        os.unlink(self.d_csv)
+
+    def test_sqlite3_to_csv_oo2(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        sqlite_db = d.get_sqlite3(self.SPHERE_DATA, "sqlite2.csv")
+        self.assertTrue(sqlite_db != None)
+        cinema_db = d.get_sqlite3_to_csv(sqlite_db, "sphere", self.SPHERE_DATA)
+        original = d.get_iterator(self.SPHERE_DATA, "files4.csv")
+        for a, b in zip(cinema_db, original):
+            self.assertEqual(a, b)
+
+        os.unlink(self.d_csv)
+
+    def test_sqlite3_to_csv_oo3(self):
+        sh.copyfile(self.d_backup, self.d_csv)
+        sqlite_db = d.get_sqlite3(self.SPHERE_DATA, "sqlite3.csv")
+        self.assertTrue(sqlite_db != None)
+        cinema_db = d.get_sqlite3_to_csv(sqlite_db, "sphere", self.SPHERE_DATA)
+        original = d.get_iterator(self.SPHERE_DATA, "files4.csv")
+        for a, b in zip(cinema_db, original):
+            self.assertEqual(a, b)
+
+        os.unlink(self.d_csv)
+
 class BackupD(unittest.TestCase):
     """
     Test backing up a Spec D file.
