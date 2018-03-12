@@ -1,4 +1,5 @@
 TODOs:
+- CLAHub integration (it's broken for me?)
 - check scikit-image version
 - check opencv version
 - test file row function

@@ -1,11 +1,7 @@
 Los Alamos National Laboratory policy requires that all code (new or patches) 
-sign an Contributor License Agreement (CLA) to be able to submit code to 
-cinema_lib.  No patches/pull request will be accepted without agreeing to the
-cinema_lib CLA.
-
-To get started, [sign](https://www.clahub.com/agreements/lanl/cinema_lib) the 
-Contributor License Agreement at 
-https://www.clahub.com/agreements/lanl/cinema_lib
+agree an Contributor License Agreement (CLA) to be able to submit code to 
+cinema_lib. No patches/pull request will be accepted without agreeing to the
+cinema_lib CLA in *CLA.md*. (*TODO* add CLAHub integration)
 
 Current set of rules for contributing to cinema_lib (as written by Jon W.):
 1. Python 3.6 
