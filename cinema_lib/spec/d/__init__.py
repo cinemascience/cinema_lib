@@ -21,6 +21,11 @@ CDB_TO_SQLITE3 = {
     TYPE_FLOAT: "REAL",
     TYPE_STRING: "TEXT"
     }
+SQLITE3_TO_CDB = {
+    "INTEGER": TYPE_INTEGER,
+    "REAL": TYPE_FLOAT,
+    "TEXT": TYPE_STRING
+    }
 
 def __row_generator(f, strict=False):
     row = [] 
@@ -207,6 +212,7 @@ def typematch(row, types):
                    (t == h) or (v.lower() == "nan" and h == TYPE_STRING)
                    for v, t, h in zip(row, typecheck(row), types)],
                   True)
+
 
 def is_file_column(column):
     if len(column) < 4:
@@ -472,7 +478,8 @@ def get_sqlite3(db_path, csv_path=SPEC_D_CSV_FILENAME, where=":memory:"):
         log.info("Types are {0}.".format(types))
 
         # figure out the table name
-        name = os.path.splitext(os.path.basename(db_path))[0]
+        name = os.path.splitext(
+                os.path.split(os.path.normpath(db_path))[1])[0]
         log.info("Table name is \"{0}\".".format(name))
 
         # create the table
@@ -606,6 +613,82 @@ def add_columns_by_row_data(db_path, column_names, row_function,
 
     # return the backup filename
     return backup
+
+def get_sqlite3_to_csv(
+        connection, table, db_path, csv_path=SPEC_D_CSV_FILENAME):
+    """
+    Given a SQLite3 connection, convert the table to a Spec D compliant
+    CSV file. Returns the iterator to the CSV, otherwise it returns None
+    on error.
+
+    arguments:
+        connection : SQLite3 connection object
+            a connection to a SQLite3 database
+        table : string
+            the name of the table to convert
+        db_path : string
+            POSIX path to Cinema database
+        csv_path : string = SPEC_D_CSV_FILENAME
+            POSIX relative path to Cinema CSV
+
+    returns:
+        an iterator to the Cinema database (from get_iterator)
+
+    side effects:
+        writes out a csv file that is the conversion of the table
+        from the sqlite3 database
+    """
+    try:
+        # backup the file if it exists
+        fn = os.path.join(db_path, csv_path) 
+        if os.path.isfile(fn):
+            move_to_backup(db_path, csv_path)
+
+        # get the header
+        cursor = connection.cursor() 
+        header = cursor.execute("pragma table_info(%s)" % table).fetchall()
+        log.info("SQLite header is {0}.".format(header))
+        names = [row[1] for row in header]
+        log.info("Cinema columns are {0}.".format(names))
+        types = [SQLITE3_TO_CDB[row[2]] for row in header]
+        log.info("Cinema types are {0}.".format(types))
+
+        # calculate where to put the new columns
+        isnt_file = [not is_file_column(i) for i in names]
+        left = 0 # start of non files
+        right = sum(isnt_file) # start of files
+        swizzle = [0] * len(names) # index vector (permute)
+        for i in range(0, len(names)):
+            if isnt_file[i]:
+                swizzle[i] = left
+                left += 1
+            else:
+                swizzle[i] = right
+                right += 1
+        log.info("Column reordering is {0}.".format(swizzle))
+
+        # create a row writing function
+        n_columns = len(swizzle)
+        output_row = [None]*n_columns
+        def write_row(writer, new_row):
+            for i in range(0, len(swizzle)):
+                output_row[swizzle[i]] = new_row[i]
+            writer.writerow(output_row)
+
+        # write the column data
+        with open(fn, "w") as out:
+            writer = csv.writer(out)
+            # write the new header
+            write_row(writer, names)
+            # write the new rows
+            for row in cursor.execute("select * from %s" % table):
+                write_row(writer, row)
+
+        return get_iterator(db_path, csv_path)
+    except Exception as e:
+        log.error("Error in creating database: {0}.".format(e))
+        return None
+
 
 def add_column_by_row_data(db_path, column_name, row_function, 
                            csv_path=SPEC_D_CSV_FILENAME):
