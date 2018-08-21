@@ -340,9 +340,12 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
             else:
                 command = True
 
-        if command:
-            log.error("Input database not specified for A to D conversion.")
-            exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_A_TO_D_CONVERSION)
+        # removing this case, because it appears to be incorrect
+        # if return value from above sets command = True, the conversion
+        # has succeeded
+#       if command:
+#           log.error("Input database not specified for A to D conversion.")
+#           exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_A_TO_D_CONVERSION)
     
     # convert D to S
     if args.d2s and not command:
