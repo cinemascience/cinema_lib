@@ -1,0 +1,6 @@
+timestep,phi,theta,FILE,FILE dataset
+1,45.0,45.0,01_45.png,
+1,90.0,90.0,01_90.png,
+2,45.0,45.0,02_45.png,
+2,90.0,90.0,02_90.png,
+1,,,,subset_01.vti
