@@ -2,8 +2,6 @@ TODOs:
 - CLAHub integration (it's broken for me?)
 - check scikit-image version
 - check opencv version
-- test file row function
-- test null file processing
 - integrate Laura's code
 - start writing metadata (data.json)
 - --image-crop (mirror Laura's work)
@@ -13,12 +11,11 @@ TODOs:
 - --error-codes to list error codes
 - --filetypes to list filetypes in a FILE column
 - --query to perform a SQL query
-- many more command line tests
+- command line testing
 - conda packaging
 - continuous integration
-- D to A conversion
+- D to A conversion (if possible)
 - upload to conda, pypi, and github
 - HDF5 to D conversion
-- SQLite to D conversion
 - Scoreboard (z-checker like) commands
 - Stats on columns commands

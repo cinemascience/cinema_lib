@@ -142,6 +142,7 @@ class SpecD(unittest.TestCase):
         self.EXAMPLE3_DATA = os.path.join(TEST_PATH, "example3.cdb")
         self.EXAMPLE4_DATA = os.path.join(TEST_PATH, "example4.cdb")
         self.EXAMPLE5_DATA = os.path.join(TEST_PATH, "example5.cdb")
+        self.EXAMPLE6_DATA = os.path.join(TEST_PATH, "example6.cdb")
 
     def test_sphere(self):
         self.assertTrue(d.check_database(self.SPHERE_DATA)) 
@@ -240,8 +241,9 @@ class SpecD(unittest.TestCase):
         self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_header3.csv"))
         self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_header4.csv"))
 
+    # this is now allowed in v1.2
     def test_sphere_empty_types(self):
-        self.assertFalse(d.check_database(self.SPHERE_DATA, "empty_types.csv"))
+        self.assertTrue(d.check_database(self.SPHERE_DATA, "empty_types.csv"))
 
     def test_sphere_newline_end(self):
         self.assertTrue(d.check_database(self.SPHERE_DATA, "newline_end.csv"))
@@ -263,6 +265,12 @@ class SpecD(unittest.TestCase):
 
     def test_example5(self):
         self.assertTrue(d.check_database(self.EXAMPLE5_DATA))
+
+    def test_example6(self):
+        self.assertTrue(d.check_database(self.EXAMPLE6_DATA))
+
+    def test_example6a(self):
+        self.assertTrue(d.check_database(self.EXAMPLE6_DATA, "a.csv"))
 
 class Convert(unittest.TestCase):
     """

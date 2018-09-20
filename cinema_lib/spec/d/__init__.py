@@ -205,13 +205,30 @@ def typematch(row, types):
         header : iterator of types (TYPE_INTEGER, TYPE_FLOAT, or TYPE_STRING)
 
     returns:
-        True if the types match, False if not
+        tuple of
+        (True if the types match, False if not,
+         True if header differs from new list of types,
+         header,
+         new list of types, updated if one was TYPE_EMPTY in header)
+
     """
-    return reduce(lambda x, y: x and y, 
-                  [(t == TYPE_EMPTY) or 
+    new_types = typecheck(row)
+    def pick_fixed_from_empty(a, b):
+        if a == TYPE_EMPTY and b != TYPE_EMPTY:
+            return b
+        else:
+            return a
+    new_types = [pick_fixed_from_empty(i, j) for i, j in zip(types, new_types)]
+
+    return (reduce(lambda x, y: x and y, 
+                   [(t == TYPE_EMPTY) or 
                    (t == h) or (v.lower() == "nan" and h == TYPE_STRING)
-                   for v, t, h in zip(row, typecheck(row), types)],
-                  True)
+                    for v, t, h in zip(row, typecheck(row), new_types)],
+                   True),
+            reduce(lambda x, y: x or y[0] != y[1],
+                   zip(types, new_types), False),
+            types,
+            new_types)
 
 
 def is_file_column(column):
@@ -317,12 +334,14 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
             raise e
 
         log.info("First data row is {0}.".format(row))
+        # these types are deferred if one of them is TYPE_EMPTY
         types = typecheck(row)
         log.info("Data types are {0}.".format(types))
 
-        if TYPE_EMPTY in types:
-            log.error("First data row cannot have an empty value.")
-            header_error = True
+        # removed validation of types in first row -- v1.2 tool
+        # now report if we find one is EMPTY
+        if reduce(lambda x, y: x or y == TYPE_EMPTY, types, False):
+            log.info("The first line of the columns is TYPE_EMPTY. Can't determine column type, yet.")
 
         if len(types) != len(header):
             log.error(
@@ -337,8 +356,9 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                 if i >= len(types):
                     log.error("FILE column #{0} is greater than the number of data columns {1} on row #1.".format(i, len(types)))
                     header_error = True
-                elif types[i] != TYPE_STRING:
-                    log.error("FILE column {0} is not string.".format(i))
+                # updated to allow TYPE_EMPTY in FILE columns (as per v1.2)
+                elif types[i] != TYPE_STRING and types[i] != TYPE_EMPTY:
+                    log.error("FILE column {0} is not string or empty.".format(i))
                     header_error = True
             if files[-1] != len(row) - 1:
                 log.error(
@@ -369,7 +389,11 @@ def check_database(db_path, csv_path=SPEC_D_CSV_FILENAME, quick=False):
                         log.error("On row #{0}: {1}".format(n_rows, row)) 
                         log.error("Unequal number of columns.")
                         row_error = True
-                    if not typematch(row, types):
+                    # check and update row types
+                    result, is_new, old_types, types = typematch(row, types)
+                    if is_new:
+                        log.info("Types updated on row#{0} from {1} to {2}".format(n_rows, old_types, types))
+                    if not result:
                         log.error("On row #{0}: {1}".format(n_rows, row)) 
                         log.error("Types do not match: {0}".format(typecheck(row)))
                         row_error = True
