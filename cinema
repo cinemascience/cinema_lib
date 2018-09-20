@@ -1,3 +1,14 @@
 #!/bin/sh
 
-env python3.6 -m cinema_lib.cl "$@"
+PYTHON=$(command -v python3.6)
+
+if [ $? -ne 0 ] ; then
+  PYTHON=$(command -v python3.7)
+fi
+
+if [ $? -ne 0 ] ; then
+  printf "python 3.6 or 3.7 not found. exiting."
+  exit 1
+fi
+
+${PYTHON} -m cinema_lib.cl "$@"
