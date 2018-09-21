@@ -251,25 +251,29 @@ class SpecD(unittest.TestCase):
     def test_empty_data(self):
         self.assertTrue(d.check_database(self.SPHERE_DATA, "empty_data.csv"))
 
+
     def test_example1(self):
-        self.assertTrue(d.check_database(self.EXAMPLE1_DATA))
+        self.assertTrue(d.check_database(self.EXAMPLE1_DATA, "a.csv"))
 
     def test_example2(self):
-        self.assertTrue(d.check_database(self.EXAMPLE2_DATA))
+        self.assertTrue(d.check_database(self.EXAMPLE1_DATA))
 
     def test_example3(self):
-        self.assertTrue(d.check_database(self.EXAMPLE3_DATA))
+        self.assertTrue(d.check_database(self.EXAMPLE2_DATA))
 
     def test_example4(self):
-        self.assertTrue(d.check_database(self.EXAMPLE4_DATA))
+        self.assertTrue(d.check_database(self.EXAMPLE3_DATA))
 
     def test_example5(self):
-        self.assertTrue(d.check_database(self.EXAMPLE5_DATA))
+        self.assertTrue(d.check_database(self.EXAMPLE4_DATA))
 
     def test_example6(self):
+        self.assertTrue(d.check_database(self.EXAMPLE5_DATA))
+
+    def test_example7(self):
         self.assertTrue(d.check_database(self.EXAMPLE6_DATA))
 
-    def test_example6a(self):
+    def test_example7a(self):
         self.assertTrue(d.check_database(self.EXAMPLE6_DATA, "a.csv"))
 
 class Convert(unittest.TestCase):
