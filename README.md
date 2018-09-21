@@ -47,16 +47,20 @@ $ cinema
 #### Database manipulation
 `$ cinema -t -a cinema_lib/test/data/sphere.cdb`
 - validate a Spec A database
+
 `$ cinema -i -d cinema_lib/test/data/sphere.cdb`
 - return the header (parameters, columns) for a Spec D database
+
 `$ cinema -itvq -d cinema_lib/test/data/sphere.cdb`
 - quickly validate a Spec D database and report the header, verbosely
+
 `$ cinema -t --a2d -a cinema_lib/test/data/sphere.cdb`
 - validate a Spec A database and convert it to a Spec D database
 
 #### Image examples
 `$ cinema -d cinema_lib/test/data/sphere.cdb --image-grey 2`
 - convert RGB images to greyscale images
+
 `$ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average`
 - calculate the average color per component in images, naming the column
   "average"
@@ -64,6 +68,7 @@ $ cinema
 #### Computer vision examples
 `$ cinema -d cinema_lib/test/data/sphere.cdb --cv-gaussian-blur 2`
 - convert apply a Gaussian blur to images
+
 `$ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST`
 - draw locations of FAST features in images, naming the column "FILE FAST"
 
