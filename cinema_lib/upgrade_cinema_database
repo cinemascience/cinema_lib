@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo "Upgrading " $1
+
+INPUT=$1
+OLDJSON="$INPUT/image/info.json"
+TMPJSON="$INPUT/tmp.json"
+NEWJSON="$INPUT/info.json"
+
+# echo $OLDJSON
+# echo $TMPJSON
+# echo $NEWJSON
+
+sed 's/name_pattern\": *\"/name_pattern\": \"image\//' $OLDJSON > $TMPJSON
+awk '1;/name_pattern/{print",";print "    \"version\" : \"1.1\","; print "    \"type\" : \"simple\""}' $TMPJSON > $NEWJSON
+rm $TMPJSON
+cinema --a2d --astaire $INPUT
