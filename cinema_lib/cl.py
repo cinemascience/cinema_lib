@@ -73,6 +73,7 @@ def main():
     from . import spec
     from .spec import a
     from . import version
+    from . import change
     import argparse
     import configparser
     import textwrap
