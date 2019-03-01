@@ -1,5 +1,5 @@
-import pillow_wrapper as pw
-import error_statistics_calculation as es
+from . import pillow_wrapper as pw
+from . import error_statistics_calculation as es
 import math
 
 
@@ -260,7 +260,7 @@ def get_contrast_strech_error(image, min_percentage, max_percentage):
 		contrast_strech_picture = pw.create_image(width, height)
 		multi_bands = image.split()
 		for i in range(len(multi_bands)):
-			histograms.append([es.get_percentage_histogram(multi_bands[i])])
+			histograms.append(es.get_percentage_histogram(multi_bands[i]))
 	else:
 		contrast_strech_picture = pw.create_image_greyscale(width, height)
 		histograms = [es.get_percentage_histogram(image)]
@@ -274,7 +274,7 @@ def get_contrast_strech_error(image, min_percentage, max_percentage):
 				min_value = es.get_intensity_at_percentage(histograms[color_channel], min_percentage)
 				max_value = es.get_intensity_at_percentage(histograms[color_channel], max_percentage)
 				intensities.append(
-					[es.normalize_intensity(pw.get_pixel(image, x, y)[color_channel], min_value, max_value)])
+					es.normalize_intensity(pw.get_pixel(image, x, y)[color_channel], min_value, max_value))
 
 			# Set Pixel in new image
 			if channel_count > 1:

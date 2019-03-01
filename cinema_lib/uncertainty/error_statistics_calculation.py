@@ -1,5 +1,5 @@
-import pillow_wrapper as pw
-import error_statistics_calculation as es
+from . import pillow_wrapper as pw
+from . import error_statistics_calculation as es
 import math
 
 

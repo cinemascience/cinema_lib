@@ -1,39 +1,54 @@
-import pillow_wrapper as pw
-import error_calculation as ec
-import error_statistics_calculation as es
-import sys
+from . import pillow_wrapper as pw
+from . import error_calculation as ec
+from . import error_statistics_calculation as es
+from ..spec import d
 import os
 
 
+def calculate_uncertainty(db_path, column_number, csv_path="data.csv"):
+    # get the first image
+    data = d.get_iterator(db_path, csv_path)
+    next(data)
+    next(data)
+    next(data)
+    next(data)
+    next(data)
+    for row in data:
+        if None is not row[column_number] != " ":
+            impath = (os.path.join(db_path, row[column_number]))
+            im = pw.open_image(impath)
+            splitpath = os.path.split(impath)
+            splitfile = os.path.splitext(splitpath[1])
 
-file_list = os.listdir(sys.argv[1])
+            print(splitfile, "_acutance")
+            acutance_error_im = ec.get_acutance_error(im)
+            acutance_error_im.save(splitpath[0] + "/" + splitfile[0] + "_acutance" + splitfile[1])
 
-testimg = pw.open_image("testimage.jpg")
-#testimggray = pw.convert_grayscale(testimg).split()[0]
-#testimg = testimggray
+            print(splitfile, "_gaussian")
+            gaussian_histogram = es.get_gaussian_noise_histogram(pw.convert_grayscale(im))
+            gaussian_error_im = ec.get_gaussian_error(im, gaussian_histogram)
+            gaussian_error_im.save(splitpath[0] + "/" + splitfile[0] + "_gaussian" + splitfile[1])
 
-#pw.save_image(ec.get_contrast_strech_error(testimg.split()[0], 10.0, 90.0), "/Users/maack/Documents/test.png")
+            print(splitfile, "_contrast")
+            contrast_histogram = es.get_contrast_histogram(pw.convert_grayscale(im))
+            local_contrast_error_im = ec.get_local_contrast_error(im, contrast_histogram)
+            local_contrast_error_im.save(splitpath[0] + "/" + splitfile[0] + "_contrast" + splitfile[1])
 
-testgrayimg = ec.get_acutance_error(testimg)
-testgrayimg.show()
+            print(splitfile, "_localrange")
+            localrange_error_im = ec.get_local_range_error(im, 2)
+            localrange_error_im.save(splitpath[0] + "/" + splitfile[0] + "_localrange" + splitfile[1])
 
-gaussian_histogram = es.get_gaussian_noise_histogram(pw.convert_grayscale(testimg))
-gaussian_error_img = ec.get_gaussian_error(testimg, gaussian_histogram)
-gaussian_error_img.show()
+            print(splitfile, "_saltandpepper")
+            salt_and_pepper_error_im = ec.get_salt_and_pepper_error(im, 2)
+            salt_and_pepper_error_im.save(splitpath[0] + "/" + splitfile[0] + "_saltandpepper" + splitfile[1])
 
-contrast_histogram = es.get_contrast_histogram(pw.convert_grayscale(testimg))
-local_contrast_error_img = ec.get_local_contrast_error(testimg, contrast_histogram)
-local_contrast_error_img.show()
+            print(splitfile, "_brightness")
+            brightness_error_im = ec.get_brightness_error(im)
+            brightness_error_im.save(splitpath[0] + "/" + splitfile[0] + "_brightness" + splitfile[1])
 
-localrange_error_img = ec.get_local_range_error(testimg, 2)
-localrange_error_img.show()
+            print(splitfile, "_contrast")
+            contrast_strech_error_im = ec.get_contrast_strech_error(im, 10.0, 90.0)
+            contrast_strech_error_im.save(splitpath[0] + "/" + splitfile[0] + "_contrast" + splitfile[1])
 
-salt_and_pepper_error_img = ec.get_salt_and_pepper_error(testimg, 2)
-salt_and_pepper_error_img.show()
-
-brightness_error_img = ec.get_brightness_error(testimg)
-brightness_error_img.show()
-
-contrast_strech_error_img = ec.get_contrast_strech_error(testimg, 10.0, 90.0)
-contrast_strech_error_img.show()
-
+    # close the file
+    del data
