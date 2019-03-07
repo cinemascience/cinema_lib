@@ -46,10 +46,12 @@ class ERROR_CODES:
     NO_INPUT_DATABASE_FOR_CV_COMMAND = 34
     CONVERSION_FROM_SQLITE_TO_D_FAILED = 35
     NO_OUTPUT_DATABASE_FOR_SQLITE_TO_D_CONVERSION = 36
+    IMAGE_MIN_FAILED = 37
+    IMAGE_MAX_FAILED = 38
 
 
 # if the user provides a new label, override the default
-def relabel (default, user, is_file=False):
+def relabel(default, user, is_file=False):
     if is_file:
         if user == None:
             return "FILE" + default
@@ -63,7 +65,7 @@ def relabel (default, user, is_file=False):
 
 
 # verify that the input column (N) is ok
-def check_n (header, n):
+def check_n(header, n):
     if n >= len(header):
         log.error(
             "N ({0}) is greater or equal to the number of columns in input database ({1}).".format(n, len(header)))
@@ -74,7 +76,7 @@ def check_n (header, n):
         exit(ERROR_CODES.N_IS_NOT_A_FILE_COLUMN)
 
 
-def main ():
+def main():
     from . import spec
     from .spec import a
     from . import version
@@ -237,6 +239,10 @@ def main ():
                             help="COMMAND: convert and write image data to greyscale PNG in column number N, "
                                  "using scikit-image color.rgb2grey. new files are named "
                                  "\"<old_base_filename>_image_grey.png\"")
+        parser.add_argument("--image-max", metavar="N", type=int,
+                            help="COMMAND: add image max data calculated from images in column number N")
+        parser.add_argument("--image-min", metavar="N", type=int,
+                            help="COMMAND: add image min data calculated from images in column number N")
         parser.add_argument("--image-mean", metavar="N", type=int,
                             help="COMMAND: add image mean data calculated from images in column number N")
         parser.add_argument("--image-stddev", metavar="N", type=int,
@@ -433,6 +439,8 @@ def main ():
 
         # image command check
         command = \
+            args.image_max is not None or \
+            args.image_min is not None or \
             args.image_mean is not None or \
             args.image_grey is not None or \
             args.image_stddev is not None or \
@@ -456,6 +464,26 @@ def main ():
             else:
                 header = next(d.get_iterator(args.dietrich))
 
+        # image-max
+        if args.image_max is not None:
+            check_n(header, args.image_max)
+            if d_image.file_add_column(args.dietrich,
+                                       args.image_max,
+                                       relabel(
+                                           "image max",
+                                           args.label),
+                                       image.file_max):
+                exit(ERROR_CODES.IMAGE_MAX_FAILED)
+        # image-min
+        if args.image_min is not None:
+            check_n(header, args.image_min)
+            if d_image.file_add_column(args.dietrich,
+                                       args.image_min,
+                                       relabel(
+                                           "image min",
+                                           args.label),
+                                       image.file_min):
+                exit(ERROR_CODES.IMAGE_MIN_FAILED)
         # image-mean
         if args.image_mean is not None:
             check_n(header, args.image_mean)
@@ -599,10 +627,10 @@ def main ():
                 exit(ERROR_CODES.IMAGE_JOINT_FAILED)
 
         elif args.image_uncertainty is not None:
-            #check_n(header, args.image_uncertainty)
+            # check_n(header, args.image_uncertainty)
             if unc_image.calculate_uncertainty(args.dietrich,
-                                       args.image_uncertainty,
-                                       "data.csv"):
+                                               args.image_uncertainty,
+                                               "data.csv"):
                 exit(ERROR_CODES.IMAGE_JOINT_FAILED)
 
     # computer vision commands

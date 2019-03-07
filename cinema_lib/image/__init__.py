@@ -15,6 +15,7 @@ try:
 except Exception as e:                 
     raise e        
 
+
 def file_mean(db_path, image_path):
     """
     Calculate the mean of an image file. For multi-component images,
@@ -32,6 +33,44 @@ def file_mean(db_path, image_path):
     """
 
     return np.mean(io.imread(os.path.join(db_path, image_path)), (0, 1))
+
+
+def file_max(db_path, image_path):
+    """
+    Calculate the maximum of an image file. For multi-component images,
+    it returns the average vector (RGBA, etc.)
+
+    arguments:
+        db_path : string
+            POSIX path for the Cinema database
+
+        image_path : string
+            relative POSIX path to the image from the Cinema database
+
+    returns:
+        the average scalar or vector of the image
+    """
+
+    return np.amax(io.imread(os.path.join(db_path, image_path)), (0, 1))
+
+
+def file_min(db_path, image_path):
+    """
+    Calculate the minimum of an image file. For multi-component images,
+    it returns the average vector (RGBA, etc.)
+
+    arguments:
+        db_path : string
+            POSIX path for the Cinema database
+
+        image_path : string
+            relative POSIX path to the image from the Cinema database
+
+    returns:
+        the average scalar or vector of the image
+    """
+    return np.amin(io.imread(os.path.join(db_path, image_path)), (0, 1))
+
 
 def file_grey(db_path, image_path, suffix="_image_grey", file_ext="png"):
     """
@@ -66,6 +105,7 @@ def file_grey(db_path, image_path, suffix="_image_grey", file_ext="png"):
 
     return new_fn
 
+
 def file_stddev(db_path, image_path):
     """
     Calculate the standard deviation of an image file. For multi-component 
@@ -85,10 +125,12 @@ def file_stddev(db_path, image_path):
 
     return np.std(io.imread(os.path.join(db_path, image_path)), (0, 1))
 
+
 def __entropy(im, bins):
     histogram = np.histogram(im, bins)[0]
     histogram = histogram / float(np.sum(histogram))
     return -np.sum(histogram * np.log2(histogram, where=histogram > 0)) 
+
 
 def file_shannon_entropy(db_path, image_path, bins=131072):
     """
@@ -115,6 +157,7 @@ def file_shannon_entropy(db_path, image_path, bins=131072):
     else:
         return [__entropy(im[:,:,d], bins) for d in range(0, im.shape[2])]
 
+
 def file_unique_count(db_path, image_path):
     """
     Calculate a count of the number of unique pixels in an image file.
@@ -135,6 +178,7 @@ def file_unique_count(db_path, image_path):
     else:
         s = im.shape
         return len(np.unique(im.reshape(s[0]*s[1], s[2]), axis=0))
+
 
 def file_canny_count(db_path, image_path):
     """
@@ -158,6 +202,7 @@ def file_canny_count(db_path, image_path):
     else:
         return \
             [np.sum(feature.canny(im[:,:,d])) for d in range(0, im.shape[2])]
+
 
 def file_percentile(db_path, image_path, percent):
     """
@@ -184,6 +229,7 @@ def file_percentile(db_path, image_path, percent):
     else:
         return [np.percentile(im[:,:,d], percent, interpolation='nearest') for
                 d in range(0, im.shape[2])]
+
 
 def file_joint_entropy(db_path, image_path, discretization=1024):
     """
