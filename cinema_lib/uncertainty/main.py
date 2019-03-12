@@ -19,53 +19,53 @@ def calculate_uncertainty(db_path, column_number, csv_path="data.csv"):
                                     calculate_uncertainty_contrast_strech)
 
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "min_acutance", image.file_min)
+    d_im_image.file_add_column(db_path, column_number, "u_min_acutance", image.file_min)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "avg_acutance", image.file_mean)
+    d_im_image.file_add_column(db_path, column_number, "u_avg_acutance", image.file_mean)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "max_acutance", image.file_max)
+    d_im_image.file_add_column(db_path, column_number, "u_max_acutance", image.file_max)
     column_number += 2
 
-    d_im_image.file_add_column(db_path, column_number, "min_gaussian", image.file_min)
+    d_im_image.file_add_column(db_path, column_number, "u_min_gaussian", image.file_min)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "avg_gaussian", image.file_mean)
+    d_im_image.file_add_column(db_path, column_number, "u_avg_gaussian", image.file_mean)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "max_gaussian", image.file_max)
+    d_im_image.file_add_column(db_path, column_number, "u_max_gaussian", image.file_max)
     column_number += 2
 
-    d_im_image.file_add_column(db_path, column_number, "min_local_contrast", image.file_min)
+    d_im_image.file_add_column(db_path, column_number, "u_min_local_contrast", image.file_min)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "avg_local_contrast", image.file_mean)
+    d_im_image.file_add_column(db_path, column_number, "u_avg_local_contrast", image.file_mean)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "max_local_contrast", image.file_max)
+    d_im_image.file_add_column(db_path, column_number, "u_max_local_contrast", image.file_max)
     column_number += 2
 
-    d_im_image.file_add_column(db_path, column_number, "min_local_range", image.file_min)
+    d_im_image.file_add_column(db_path, column_number, "u_min_local_range", image.file_min)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "avg_local_range", image.file_mean)
+    d_im_image.file_add_column(db_path, column_number, "u_avg_local_range", image.file_mean)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "max_local_range", image.file_max)
+    d_im_image.file_add_column(db_path, column_number, "u_max_local_range", image.file_max)
     column_number += 2
 
-    d_im_image.file_add_column(db_path, column_number, "min_salt_and_pepper", image.file_min)
+    d_im_image.file_add_column(db_path, column_number, "u_min_salt_and_pepper", image.file_min)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "avg_salt_and_pepper", image.file_mean)
+    d_im_image.file_add_column(db_path, column_number, "u_avg_salt_and_pepper", image.file_mean)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "max_salt_and_pepper", image.file_max)
+    d_im_image.file_add_column(db_path, column_number, "u_max_salt_and_pepper", image.file_max)
     column_number += 2
 
-    d_im_image.file_add_column(db_path, column_number, "min_brightness", image.file_min)
+    d_im_image.file_add_column(db_path, column_number, "u_min_brightness", image.file_min)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "avg_brightness", image.file_mean)
+    d_im_image.file_add_column(db_path, column_number, "u_avg_brightness", image.file_mean)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "max_brightness", image.file_max)
+    d_im_image.file_add_column(db_path, column_number, "u_max_brightness", image.file_max)
     column_number += 2
 
-    d_im_image.file_add_column(db_path, column_number, "min_contrast_strech", image.file_min)
+    d_im_image.file_add_column(db_path, column_number, "u_min_contrast_strech", image.file_min)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "avg_contrast_strech", image.file_mean)
+    d_im_image.file_add_column(db_path, column_number, "u_avg_contrast_strech", image.file_mean)
     column_number += 1
-    d_im_image.file_add_column(db_path, column_number, "max_contrast_strech", image.file_max)
+    d_im_image.file_add_column(db_path, column_number, "u_max_contrast_strech", image.file_max)
 
 
 def calculate_uncertainty_acutance(db_path, image_path, suffix="_acutance", file_ext="png"):

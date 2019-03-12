@@ -29,7 +29,7 @@ def file_mean(db_path, image_path):
             relative POSIX path to the image from the Cinema database
 
     returns:
-        the average scalar or vector of the image
+        the minimum scalar or vector of the image
     """
 
     return np.mean(io.imread(os.path.join(db_path, image_path)), (0, 1))
@@ -48,7 +48,7 @@ def file_max(db_path, image_path):
             relative POSIX path to the image from the Cinema database
 
     returns:
-        the average scalar or vector of the image
+        the maximum scalar or vector of the image
     """
 
     return np.amax(io.imread(os.path.join(db_path, image_path)), (0, 1))
