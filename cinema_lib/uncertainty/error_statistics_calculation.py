@@ -135,6 +135,9 @@ def get_intensity_at_percentage(percentage_histogram, percent):
 
 
 def normalize_intensity(intensity, min_intensity, max_intensity):
+	if (max_intensity - min_intensity) == 0:
+		return 0
+
 	min_intensity = round(min_intensity)
 	max_intensity = round(max_intensity)
 	mino = 0

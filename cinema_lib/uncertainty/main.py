@@ -4,19 +4,38 @@ from . import error_statistics_calculation as es
 from .. import image
 from ..image import d as d_im_image
 from ..cv import d as d_cv_image
+import csv
 import os
+from concurrent.futures import ProcessPoolExecutor
 
 
 def calculate_uncertainty(db_path, column_number, csv_path="data.csv"):
-    d_cv_image.file_add_file_column(db_path, column_number, "FILE_acutance", calculate_uncertainty_acutance)
-    d_cv_image.file_add_file_column(db_path, column_number, "FILE_gaussian", calculate_uncertainty_gaussian)
-    d_cv_image.file_add_file_column(db_path, column_number, "FILE_local_contrast", calculate_uncertainty_local_contrast)
-    d_cv_image.file_add_file_column(db_path, column_number, "FILE_local_range", calculate_uncertainty_local_range)
+    filenamelist = get_filenames_from_csv(os.path.join(db_path, csv_path), column_number)
+    with ProcessPoolExecutor(max_workers=8) as executor:
+        for i in filenamelist:
+            try:
+                pw.open_image(os.path.join(db_path, i))
+            except IOError:
+                print(os.path.join(db_path, i), "not found")
+                continue
+            #executor.submit(calculate_uncertainty_acutance, db_path, i)
+            #executor.submit(calculate_uncertainty_gaussian, db_path, i)
+            #executor.submit(calculate_uncertainty_local_contrast, db_path, i)
+            #executor.submit(calculate_uncertainty_local_range, db_path, i)
+            #executor.submit(calculate_uncertainty_salt_and_pepper, db_path, i)
+            #executor.submit(calculate_uncertainty_brightness, db_path, i)
+            executor.submit(calculate_uncertainty_contrast_strech, db_path, i)
+
+    d_cv_image.file_add_file_column(db_path, column_number, "FILE_acutance", create_db_entry_uncertainty_acutance)
+    d_cv_image.file_add_file_column(db_path, column_number, "FILE_gaussian", create_db_entry_uncertainty_gaussian)
+    d_cv_image.file_add_file_column(db_path, column_number, "FILE_local_contrast",
+                                    create_db_entry_uncertainty_local_contrast)
+    d_cv_image.file_add_file_column(db_path, column_number, "FILE_local_range", create_db_entry_uncertainty_local_range)
     d_cv_image.file_add_file_column(db_path, column_number, "FILE_salt_and_pepper",
-                                    calculate_uncertainty_salt_and_pepper)
-    d_cv_image.file_add_file_column(db_path, column_number, "FILE_brightness", calculate_uncertainty_brightness)
+                                    create_db_entry_uncertainty_salt_and_pepper)
+    d_cv_image.file_add_file_column(db_path, column_number, "FILE_brightness", create_db_entry_uncertainty_brightness)
     d_cv_image.file_add_file_column(db_path, column_number, "FILE_contrast_strech",
-                                    calculate_uncertainty_contrast_strech)
+                                    create_db_entry_uncertainty_contrast_strech)
 
     column_number += 1
     d_im_image.file_add_column(db_path, column_number, "u_min_acutance", image.file_min)
@@ -66,6 +85,19 @@ def calculate_uncertainty(db_path, column_number, csv_path="data.csv"):
     d_im_image.file_add_column(db_path, column_number, "u_avg_contrast_strech", image.file_mean)
     column_number += 1
     d_im_image.file_add_column(db_path, column_number, "u_max_contrast_strech", image.file_max)
+
+
+def get_filenames_from_csv(path_to_csv, coloumn):
+    filenames = []
+    with open(path_to_csv) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        header = True
+        for row in csv_reader:
+            if header:
+                header = False
+            else:
+                filenames.append(row[coloumn])
+    return filenames
 
 
 def calculate_uncertainty_acutance(db_path, image_path, suffix="_acutance", file_ext="png"):
@@ -138,3 +170,65 @@ def calculate_uncertainty_contrast_strech(db_path, image_path, suffix="_contrast
     contrast_strech_error_im.save(os.path.join(db_path, new_fn))
 
     return new_fn
+
+
+"""
+Create DB entries
+"""
+
+
+def create_db_entry_uncertainty_acutance(db_path, image_path, suffix="_acutance", file_ext="png"):
+    path = os.path.splitext(image_path)[0] + suffix + "." + file_ext
+    print(db_path, path, os.path.isfile(os.path.join(db_path, path)))
+    if os.path.isfile(os.path.join(db_path, path)):
+        return path
+    else:
+        return "notFound"
+
+
+def create_db_entry_uncertainty_gaussian(db_path, image_path, suffix="_gaussian", file_ext="png"):
+    path = os.path.splitext(image_path)[0] + suffix + "." + file_ext
+    if os.path.isfile(os.path.join(db_path, path)):
+        return path
+    else:
+        return "notFound"
+
+
+def create_db_entry_uncertainty_local_contrast(db_path, image_path, suffix="_local_contrast", file_ext="png"):
+    path = os.path.splitext(image_path)[0] + suffix + "." + file_ext
+    if os.path.isfile(os.path.join(db_path, path)):
+        return path
+    else:
+        return "notFound"
+
+
+def create_db_entry_uncertainty_local_range(db_path, image_path, suffix="_local_range", file_ext="png"):
+    path = os.path.splitext(image_path)[0] + suffix + "." + file_ext
+    if os.path.isfile(os.path.join(db_path, path)):
+        return path
+    else:
+        return "notFound"
+
+
+def create_db_entry_uncertainty_salt_and_pepper(db_path, image_path, suffix="_salt_and_pepper", file_ext="png"):
+    path = os.path.splitext(image_path)[0] + suffix + "." + file_ext
+    if os.path.isfile(os.path.join(db_path, path)):
+        return path
+    else:
+        return "notFound"
+
+
+def create_db_entry_uncertainty_brightness(db_path, image_path, suffix="_brightness", file_ext="png"):
+    path = os.path.splitext(image_path)[0] + suffix + "." + file_ext
+    if os.path.isfile(os.path.join(db_path, path)):
+        return path
+    else:
+        return "notFound"
+
+
+def create_db_entry_uncertainty_contrast_strech(db_path, image_path, suffix="_contrast_strech", file_ext="png"):
+    path = os.path.splitext(image_path)[0] + suffix + "." + file_ext
+    if os.path.isfile(os.path.join(db_path, path)):
+        return path
+    else:
+        return "notFound"
