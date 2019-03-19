@@ -6,24 +6,26 @@ from ..image import d as d_im_image
 from ..cv import d as d_cv_image
 import csv
 import os
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 
 
 def calculate_uncertainty(db_path, column_number, csv_path="data.csv"):
     filenamelist = get_filenames_from_csv(os.path.join(db_path, csv_path), column_number)
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
         for i in filenamelist:
             try:
                 pw.open_image(os.path.join(db_path, i))
             except IOError:
                 print(os.path.join(db_path, i), "not found")
                 continue
-            #executor.submit(calculate_uncertainty_acutance, db_path, i)
-            #executor.submit(calculate_uncertainty_gaussian, db_path, i)
-            #executor.submit(calculate_uncertainty_local_contrast, db_path, i)
-            #executor.submit(calculate_uncertainty_local_range, db_path, i)
-            #executor.submit(calculate_uncertainty_salt_and_pepper, db_path, i)
-            #executor.submit(calculate_uncertainty_brightness, db_path, i)
+
+            executor.submit(calculate_uncertainty_acutance, db_path, i)
+            executor.submit(calculate_uncertainty_gaussian, db_path, i)
+            executor.submit(calculate_uncertainty_local_contrast, db_path, i)
+            executor.submit(calculate_uncertainty_local_range, db_path, i)
+            executor.submit(calculate_uncertainty_salt_and_pepper, db_path, i)
+            executor.submit(calculate_uncertainty_brightness, db_path, i)
             executor.submit(calculate_uncertainty_contrast_strech, db_path, i)
 
     d_cv_image.file_add_file_column(db_path, column_number, "FILE_acutance", create_db_entry_uncertainty_acutance)
