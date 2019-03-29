@@ -102,6 +102,27 @@ def main():
         - VALIDATE and FLAG can be run in conjunction with COMMAND or independently.\n\n
         """)
 
+    # try uncertainty
+    uncertainty_ok = False
+    try:
+        from . import uncertainty
+        print("Success")
+        uncertainty_ok = True
+
+        epilog_text += textwrap.dedent(
+            """
+            - Uncertainty functions require that the input database is Spec D. The database 
+              (data.csv) will be backed up prior to running the command. Backup files
+              can be found in the database directory as "data_csv.<timestamp>.<md5 hash>".
+            - Images can be RGB or Grayscale, but only one image is allowed per row\n\n
+            """)
+    except Exception as e:
+        epilog_text += textwrap.dedent(
+            """
+            Uncertainty functionality unavailable. The library Pillow is required: 
+            """ + str(e) + "\n\n")
+
+
     # try image
     image_ok = False
     try:
@@ -233,6 +254,11 @@ def main():
                         help='COMMAND: create a a Spec D database CSV from a SQLite database. If there is only one '
                              'table, it converts that table, otherwise it converts a table or view named "cinema".')
 
+    # add uncertainty tools
+    if uncertainty_ok:
+        parser.add_argument("--image-uncertainty", metavar="N", type=int,
+                            help="COMMAND: add uncertainty quantification")
+
     # add image tools
     if image_ok:
         parser.add_argument("--image-grey", metavar="N", type=int,
@@ -269,8 +295,6 @@ def main():
                             help="command: add the 95th percentile data calculated from images in column number N")
         parser.add_argument("--image-99th", metavar="N", type=int,
                             help="command: add the 99th percentile data calculated from images in column number N")
-        parser.add_argument("--image-uncertainty", metavar="N", type=int,
-                            help="COMMAND: add uncertainty quantification")
 
     # add cv2 tools
     if cv_ok:
@@ -431,11 +455,35 @@ def main():
                 "Output database not specified for D to SQLite conversion.")
             exit(ERROR_CODES.NO_OUTPUT_DATABASE_FOR_SQLITE_TO_D_CONVERSION)
 
+    #uncertainty commands
+    if uncertainty_ok and not command:
+        from . import uncertainty as unc_image
+
+        # image command check
+        command = args.image_uncertainty is not None
+
+        if command:
+            if args.dietrich is None:
+                log.error(
+                    "Input Spec D database not specified for image command.")
+                exit(ERROR_CODES.NO_INPUT_DATABASE_FOR_IMAGE_COMMAND)
+            else:
+                header = next(d.get_iterator(args.dietrich))
+
+        print(args.image_uncertainty is not None)
+        #image uncertainty
+        if args.image_uncertainty is not None:
+            check_n(header, args.image_uncertainty)
+            if unc_image.calculate_uncertainty(args.dietrich,
+                                               args.image_uncertainty,
+                                               "data.csv"):
+                exit(ERROR_CODES.IMAGE_JOINT_FAILED)
+
+
     # image commands
     if image_ok and not command:
         from .image import d as d_image  # TODO FIXME
         from . import image
-        from .uncertainty import main as unc_image
 
         # image command check
         command = \
@@ -453,8 +501,7 @@ def main():
             args.image_90th is not None or \
             args.image_95th is not None or \
             args.image_99th is not None or \
-            args.image_joint is not None or \
-            args.image_uncertainty is not None
+            args.image_joint is not None
 
         if command:
             if args.dietrich is None:
@@ -626,12 +673,6 @@ def main():
                                        n_components=0):
                 exit(ERROR_CODES.IMAGE_JOINT_FAILED)
 
-        elif args.image_uncertainty is not None:
-            # check_n(header, args.image_uncertainty)
-            if unc_image.calculate_uncertainty(args.dietrich,
-                                               args.image_uncertainty,
-                                               "data.csv"):
-                exit(ERROR_CODES.IMAGE_JOINT_FAILED)
 
     # computer vision commands
     if cv_ok and not command:
