@@ -106,7 +106,6 @@ def main():
     uncertainty_ok = False
     try:
         from . import uncertainty
-        print("Success")
         uncertainty_ok = True
 
         epilog_text += textwrap.dedent(
@@ -121,7 +120,6 @@ def main():
             """
             Uncertainty functionality unavailable. The library Pillow is required: 
             """ + str(e) + "\n\n")
-
 
     # try image
     image_ok = False
@@ -256,8 +254,14 @@ def main():
 
     # add uncertainty tools
     if uncertainty_ok:
-        parser.add_argument("--image-uncertainty", metavar="N", type=int,
+        parser.add_argument("--uncertainty-quantification", metavar="N", type=int,
                             help="COMMAND: add uncertainty quantification")
+        parser.add_argument("--uncertainty-min", action='store_true',
+                            help="COMMAND: calculates the minimum of all uncertainty measures")
+        parser.add_argument("--uncertainty-avg", action='store_true',
+                            help="COMMAND: calculates the average of all uncertainty measures")
+        parser.add_argument("--uncertainty-max", action='store_true',
+                            help="COMMAND: calculates the maximum of all uncertainty measures")
 
     # add image tools
     if image_ok:
@@ -455,12 +459,24 @@ def main():
                 "Output database not specified for D to SQLite conversion.")
             exit(ERROR_CODES.NO_OUTPUT_DATABASE_FOR_SQLITE_TO_D_CONVERSION)
 
-    #uncertainty commands
+    # parser.add_argument("--uncertainty-quantification", metavar="N", type=int,
+    #                    help="COMMAND: add uncertainty quantification")
+    # parser.add_argument("--uncertainty-min", metavar="N", type=int,
+    #                    help="COMMAND: calculates the minimum of all uncertainty measures")
+    # parser.add_argument("--uncertainty-avg", metavar="N", type=int,
+    #                    help="COMMAND: calculates the average of all uncertainty measures")
+    # parser.add_argument("--uncertainty-max", metavar="N", type=int,
+    #                    help="COMMAND: calculates the maximum of all uncertainty measures")
+    # uncertainty commands
     if uncertainty_ok and not command:
         from . import uncertainty as unc_image
+        from . import image
 
         # image command check
-        command = args.image_uncertainty is not None
+        command = args.uncertainty_quantification is not None or \
+            args.uncertainty_max is not None or \
+            args.uncertainty_avg is not None or \
+            args.uncertainty_min is not None
 
         if command:
             if args.dietrich is None:
@@ -470,13 +486,30 @@ def main():
             else:
                 header = next(d.get_iterator(args.dietrich))
 
-        print(args.image_uncertainty is not None)
-        #image uncertainty
-        if args.image_uncertainty is not None:
-            check_n(header, args.image_uncertainty)
+        # uncertainty quantification
+        if args.uncertainty_quantification is not None:
+            check_n(header, args.uncertainty_quantification)
             if unc_image.calculate_uncertainty(args.dietrich,
-                                               args.image_uncertainty,
+                                               args.uncertainty_quantification,
                                                "data.csv"):
+                exit(ERROR_CODES.IMAGE_JOINT_FAILED)
+        # uncertainty-max
+        if args.uncertainty_max is not None and args.uncertainty_max:
+            if unc_image.add_image_function_columns(args.dietrich,
+                                                    image.file_max,
+                                                    "max"):
+                exit(ERROR_CODES.IMAGE_JOINT_FAILED)
+        # uncertainty-avg
+        if args.uncertainty_avg is not None and args.uncertainty_avg:
+            if unc_image.add_image_function_columns(args.dietrich,
+                                                    image.file_mean,
+                                                    "avg"):
+                exit(ERROR_CODES.IMAGE_JOINT_FAILED)
+        # uncertainty-min
+        if args.uncertainty_min is not None and args.uncertainty_min:
+            if unc_image.add_image_function_columns(args.dietrich,
+                                                    image.file_min,
+                                                    "min"):
                 exit(ERROR_CODES.IMAGE_JOINT_FAILED)
 
 
@@ -672,7 +705,6 @@ def main():
                                        image.file_joint_entropy,
                                        n_components=0):
                 exit(ERROR_CODES.IMAGE_JOINT_FAILED)
-
 
     # computer vision commands
     if cv_ok and not command:
