@@ -1,7 +1,6 @@
 from . import pillow_wrapper as pw
 from . import error_statistics_calculation as es
 import math
-import sys
 
 
 # Create a Grayscale version of the image
@@ -25,6 +24,7 @@ def get_acutance_error(image):
 
     # number of color channels
     channel_count = len(image.getbands())
+    is_greyscale = (channel_count == 1)
 
     # Create new Image and a Pixel Map
     acutancepicture = pw.create_image_greyscale(width, height)
@@ -42,16 +42,20 @@ def get_acutance_error(image):
                 acutanceyp = 0.0
 
                 if x - 1 >= 0:
-                    acutancexm = abs(pw.get_pixel(image, x, y)[channel] - pw.get_pixel(image, x - 1, y)[channel])
+                    acutancexm = abs(pw.get_pixel(image, x, y, is_greyscale)[channel] -
+                                     pw.get_pixel(image, x - 1, y, is_greyscale)[channel])
 
                 if x + 1 < width:
-                    acutancexp = abs(pw.get_pixel(image, x, y)[channel] - pw.get_pixel(image, x + 1, y)[channel])
+                    acutancexp = abs(pw.get_pixel(image, x, y, is_greyscale)[channel] -
+                                     pw.get_pixel(image, x + 1, y, is_greyscale)[channel])
 
                 if y - 1 >= 0:
-                    acutanceym = abs(pw.get_pixel(image, x, y)[channel] - pw.get_pixel(image, x, y - 1)[channel])
+                    acutanceym = abs(pw.get_pixel(image, x, y, is_greyscale)[channel] -
+                                     pw.get_pixel(image, x, y - 1, is_greyscale)[channel])
 
                 if y + 1 < height:
-                    acutanceyp = abs(pw.get_pixel(image, x, y)[channel] - pw.get_pixel(image, x, y + 1)[channel])
+                    acutanceyp = abs(pw.get_pixel(image, x, y, is_greyscale)[channel] -
+                                     pw.get_pixel(image, x, y + 1, is_greyscale)[channel])
 
                 acutancelengthm = math.sqrt(acutancexm ** 2 + acutanceym ** 2) / pixellength
                 acutancelengthp = math.sqrt(acutancexp ** 2 + acutanceyp ** 2) / pixellength
@@ -91,6 +95,7 @@ def get_gaussian_error(image, gauss_histogram):
 
     # number of color channels
     channel_count = len(image.getbands())
+    is_greyscale = (channel_count == 1)
 
     # create new image and a pixel map
     gaussian_error_picture = pw.create_image_greyscale(width, height)
@@ -101,7 +106,7 @@ def get_gaussian_error(image, gauss_histogram):
             result = 0.0
 
             for color_channel in range(channel_count):
-                value = int(math.floor(pw.get_pixel(image, x, y)[color_channel]))
+                value = int(math.floor(pw.get_pixel(image, x, y, is_greyscale)[color_channel]))
                 result += math.pow(gauss_histogram[value], 2)
 
             result = (result / channel_count) * 255.0
@@ -133,6 +138,7 @@ def get_local_contrast_error(image, contrast_histogram):
 
     # number of color channels
     channel_count = len(image.getbands())
+    is_greyscale = (channel_count == 1)
 
     # Create new Image and a Pixel Map
     local_contrast_error_picture = pw.create_image_greyscale(width, height)
@@ -143,7 +149,7 @@ def get_local_contrast_error(image, contrast_histogram):
             result = 0.0
 
             for color_channel in range(channel_count):
-                value = int(math.floor(pw.get_pixel(image, x, y)[color_channel]))
+                value = int(math.floor(pw.get_pixel(image, x, y, is_greyscale)[color_channel]))
                 result += math.pow(contrast_histogram[value], 2)
 
             result = (result / channel_count) * 255.0
@@ -181,6 +187,7 @@ def get_local_range_error(image, neighborhood_radius):
 
     # number of color channels
     channel_count = len(image.getbands())
+    is_greyscale = (channel_count == 1)
 
     # Create new Image and a Pixel Map
     local_range_error_picture = pw.create_image_greyscale(width, height)
@@ -208,7 +215,7 @@ def get_local_range_error(image, neighborhood_radius):
                             newx = x + localx
                             newy = y + localy
 
-                            local_value = pw.get_pixel(image, newx, newy)[color_channel]
+                            local_value = pw.get_pixel(image, newx, newy, is_greyscale)[color_channel]
 
                             if max_value < local_value:
                                 max_value = local_value
@@ -255,6 +262,7 @@ def get_salt_and_pepper_error(image, neighborhood_radius):
 
     # number of color channels
     channel_count = len(image.getbands())
+    is_greyscale = (channel_count == 1)
 
     # Create new Image and a Pixel Map
     get_salt_and_pepper_error_picture = pw.create_image_greyscale(width, height)
@@ -281,14 +289,14 @@ def get_salt_and_pepper_error(image, neighborhood_radius):
                             newx = x + localx
                             newy = y + localy
 
-                            local_value = pw.get_pixel(image, newx, newy)[color_channel]
+                            local_value = pw.get_pixel(image, newx, newy, is_greyscale)[color_channel]
 
                             sum_of_neighbors += local_value
                             number_of_pixels += 1
 
                 neighborhood_avg = sum_of_neighbors / number_of_pixels
 
-                difference = abs(neighborhood_avg - pw.get_pixel(image, x, y)[color_channel]) / 255.0
+                difference = abs(neighborhood_avg - pw.get_pixel(image, x, y, is_greyscale)[color_channel]) / 255.0
 
                 salt_and_pepper += difference ** 2
 
@@ -321,6 +329,7 @@ def get_brightness_error(image):
 
     # number of color channels
     channel_count = len(image.getbands())
+    is_greyscale = (channel_count == 1)
 
     # Create new Image and a Pixel Map
     brightness_error_picture = pw.create_image_greyscale(width, height)
@@ -332,7 +341,7 @@ def get_brightness_error(image):
             brightness = 0.0
 
             for color_channel in range(channel_count):
-                brightness += pw.get_pixel(image, x, y)[color_channel] / 255.0
+                brightness += pw.get_pixel(image, x, y, is_greyscale)[color_channel] / 255.0
 
             brightness = (1 - (brightness / channel_count)) * 255.0
 
@@ -363,13 +372,14 @@ def get_contrast_strech_error(image, min_percentage, max_percentage):
 
     returns:
         a greyscale image providing the uncertainty information
-        for the contrast streh error
+        for the contrast strech error
     """
     # Get size
     width, height = image.size
 
     # number of color channels
     channel_count = len(image.getbands())
+    is_greyscale = (channel_count == 1)
 
     grayscale_image = pw.convert_grayscale(image)
     contrast_strech_picture = None
@@ -393,7 +403,8 @@ def get_contrast_strech_error(image, min_percentage, max_percentage):
                 min_value = es.get_intensity_at_percentage(histograms[color_channel], min_percentage)
                 max_value = es.get_intensity_at_percentage(histograms[color_channel], max_percentage)
                 intensities.append(
-                    es.normalize_intensity(pw.get_pixel(image, x, y)[color_channel], min_value, max_value))
+                    es.normalize_intensity(pw.get_pixel(image, x, y, is_greyscale)[color_channel],
+                                           min_value, max_value))
 
             # Set Pixel in new image
             if channel_count > 1:

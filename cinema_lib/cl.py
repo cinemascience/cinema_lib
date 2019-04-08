@@ -473,7 +473,8 @@ def main():
         from . import image
 
         # image command check
-        command = args.uncertainty_quantification is not None or \
+        command = \
+            args.uncertainty_quantification is not None or \
             args.uncertainty_max is not None or \
             args.uncertainty_avg is not None or \
             args.uncertainty_min is not None
