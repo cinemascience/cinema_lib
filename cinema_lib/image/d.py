@@ -9,8 +9,9 @@ from skimage import io
 import os
 import logging as log
 
+
 # TODO rename to columns
-def file_add_column(db_path, column_number, 
+def file_add_column(db_path, column_number,
                     function_name, image_function,
                     csv_path=d.SPEC_D_CSV_FILENAME,
                     n_components=None,
@@ -64,11 +65,11 @@ def file_add_column(db_path, column_number,
     row = next(data)
     im = io.imread(os.path.join(db_path, row[column_number]))
     # close the file
-    del(data)
+    del data
 
     if not (len(im.shape) == 2 or len(im.shape) == 3):
         log.error("Unsupported image dimensions: {0}.".format(im.shape))
-        return(True)
+        return True
 
     # determine the number of components
     if n_components == None:
@@ -81,13 +82,11 @@ def file_add_column(db_path, column_number,
     column_names = (function_name,)
     if n_components > 0:
         column_names = tuple([function_name + " " + str(i) for i in
-                             range(0, n_components)])
+                              range(0, n_components)])
 
     # iterate over the rows
     d.add_columns_by_row_data(db_path, column_names,
-      d.file_row_function(db_path, column_number, n_components, 
-                          function_name, image_function, fill), 
-                          csv_path=csv_path)
+                              d.file_row_function(db_path, column_number, n_components,
+                                                  function_name, image_function, fill),
+                              csv_path=csv_path)
     return False
-
-

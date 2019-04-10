@@ -1,7 +1,7 @@
 ## *Cinema* library (*cinema_lib*)
 
-*cinema_lib* is a set of tools and library for interacting with a Cinema 
-database (currently Spec A and Spec D) through Python and the command line 
+*cinema_lib* is a set of tools and library for interacting with a Cinema
+database (currently Spec A and Spec D) through Python and the command line
 tool, *cinema*.
 
 ### Requirements
@@ -24,7 +24,7 @@ Optional requirements are:
 
 To run the command line tool directly from the repository, after cloning:
 ```
-$ git clone https://github.com/cinemascience/cinema_lib.git 
+$ git clone https://github.com/cinemascience/cinema_lib.git
 $ cd cinema_lib
 $ ./cinema
 ```
@@ -72,3 +72,9 @@ $ cinema
 `$ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST`
 - draw locations of FAST features in images, naming the column "FILE FAST"
 
+#### Uncertainty examples
+`$ cinema -d cinema_lib/test/data/sphere.cdb --uncertainty-quantification 2`
+- Add uncertainty quantification for files in row 2
+
+`$ cinema -d cinema_lib/test/data/sphere.cdb --uncertainty-max`
+- Add maximum aggregate function to all uncertainty images
