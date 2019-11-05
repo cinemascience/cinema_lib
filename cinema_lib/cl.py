@@ -182,6 +182,8 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --image-mean 2 --label average
 Computer vision examples:
 $ cinema -d cinema_lib/test/data/sphere.cdb --cv-gaussian-blur 2
     convert apply a Gaussian blur to images
+$ cinema -d cinema_lib/test/data/sphere.cdb --cv-gaussian-blur 2 7
+    convert apply a Guassian blur with kernel size 7 to images
 $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     draw locations of FAST features in images, naming the column "FILE FAST"
 """)
@@ -255,18 +257,18 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
     if cv_ok:
         parser.add_argument("--cv-grey", metavar="N", type=int,
                 help="COMMAND: convert and write image data to greyscale PNG in column number N, using OpenCV cvtColor. new files are named \"<old_base_filename>_cv_grey.png\"")
-        parser.add_argument("--cv-box-blur", metavar="N", type=int,
-                help="COMMAND: apply box blur to image data in column number N. new files are named \"<old_base_filename>_cv_box_blur.png\"")
-        parser.add_argument("--cv-gaussian-blur", metavar="N", type=int,
-                help="COMMAND: apply Gaussian blur to image data in column number N. new files are named \"<old_base_filename>_cv_gaussian_blur.png\"")
-        parser.add_argument("--cv-median-blur", metavar="N", type=int,
-                help="COMMAND: apply median blur to image data in column number N. new files are named \"<old_base_filename>_cv_median_blur.png\"")
-        parser.add_argument("--cv-bilateral-filter", metavar="N", type=int,
-                help="COMMAND: apply bilateral filter to image data in column number N. new files are named \"<old_base_filename>_cv_bilateral_filter.png\"")
-        parser.add_argument("--cv-canny", metavar="N", type=int,
-                help="COMMAND: apply Canny edge detector to image data in column number N. new files are named \"<old_base_filename>_cv_canny.png\"")
-        parser.add_argument("--cv-contour-threshold", metavar="N", type=int,
-                help="COMMAND: draw contours around image thresholds on image data in column number N. new files are named \"<old_base_filename>_cv_contour_threshold.png\"")
+        parser.add_argument("--cv-box-blur", metavar="N", type=int, nargs='+',
+                help="COMMAND: apply box blur to image data in column number N. Can provide an optional blur kernel size. new files are named \"<old_base_filename>_cv_box_blur.png\"")
+        parser.add_argument("--cv-gaussian-blur", metavar="N", type=int, nargs='+',
+                help="COMMAND: apply Gaussian blur to image data in column number N. Can provide an optional blur kernel size. new files are named \"<old_base_filename>_cv_gaussian_blur.png\"")
+        parser.add_argument("--cv-median-blur", metavar="N", type=int, nargs='+',
+                help="COMMAND: apply median blur to image data in column number N. Can provide an optional blur kernel size. new files are named \"<old_base_filename>_cv_median_blur.png\"")
+        parser.add_argument("--cv-bilateral-filter", metavar="N", type=int, nargs='+',
+                help="COMMAND: apply bilateral filter to image data in column number N. Can provide an optional filter diameter size. new files are named \"<old_base_filename>_cv_bilateral_filter.png\"")
+        parser.add_argument("--cv-canny", metavar="N", type=int, nargs='+',
+                help="COMMAND: apply Canny edge detector to image data in column number N. Can provide optional lower and upper threshold values. new files are named \"<old_base_filename>_cv_canny.png\"")
+        parser.add_argument("--cv-contour-threshold", metavar="N", type=int, nargs='+',
+                help="COMMAND: draw contours around image thresholds on image data in column number N. Can provide optional threshold isovalue. new files are named \"<old_base_filename>_cv_contour_threshold.png\"")
         parser.add_argument("--cv-fast-draw", metavar="N", type=int,
                 help="COMMAND: draw FAST features on image data in column number N. new files are named \"<old_base_filename>_cv_fast_draw.png\"")
 
@@ -599,7 +601,7 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
         if args.cv_grey is not None:
             check_n(header, args.cv_grey)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_grey,
+                                       args.cv_grey, 
                                        relabel(
                                            "cv greyscale",
                                            args.label,
@@ -608,75 +610,108 @@ $ cinema -d cinema_lib/test/data/sphere.cdb --cv-fast-draw 2 --label FAST
                 exit(ERROR_CODES.CV_GREY_FAILED)
         # cv-box-blur
         elif args.cv_box_blur is not None:
-            check_n(header, args.cv_box_blur)
+            check_n(header, args.cv_box_blur[0])
+            box_blur_size = 10
+            if (len(args.cv_box_blur) == 2):
+                box_blur_size = args.cv_box_blur[1]
+            __box_blur = lambda x, y: cv.file_box_blur(x, y,
+                            size = box_blur_size)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_box_blur,
+                                       args.cv_box_blur[0],
                                        relabel(
-                                           "cv box blur",
+                                           "cv box blur_"+str(box_blur_size),
                                            args.label,
                                            True),
-                                       cv.file_box_blur):
+                                       __box_blur):
                 exit(ERROR_CODES.CV_BOX_BLUR_FAILED)
         # cv-gaussian-blur
         elif args.cv_gaussian_blur is not None:
-            check_n(header, args.cv_gaussian_blur)
+            check_n(header, args.cv_gaussian_blur[0])
+            gaussian_blur_size = 11
+            if (len(args.cv_gaussian_blur) == 2): 
+                gaussian_blur_size = args.cv_gaussian_blur[1]
+            __gaussian_blur = lambda x, y: cv.file_gaussian_blur(x, y,
+                                 size = gaussian_blur_size)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_gaussian_blur,
+                                       args.cv_gaussian_blur[0],
                                        relabel(
-                                            "cv gaussian blur",
+                                            "cv gaussian blur_"+str(gaussian_blur_size),
                                             args.label,
                                             True),
-                                       cv.file_gaussian_blur):
+                                       __gaussian_blur):
                 exit(ERROR_CODES.CV_GAUSSIAN_BLUR_FAILED)
         # cv-median-blur
         elif args.cv_median_blur is not None:
-            check_n(header, args.cv_median_blur)
+            check_n(header, args.cv_median_blur[0])
+            median_blur_size = 11
+            if (len(args.cv_median_blur) == 2):
+                median_blur_size = args.cv_median_blur[1]
+            __median_blur = lambda x, y: cv.file_median_blur(x, y,
+                               size = median_blur_size)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_median_blur,
+                                       args.cv_median_blur[0],
                                        relabel(
-                                            "cv median blur",
+                                            "cv median blur_"+str(median_blur_size),
                                             args.label,
                                             True),
-                                       cv.file_median_blur):
+                                       __median_blur):
                 exit(ERROR_CODES.CV_MEDIAN_BLUR_FAILED)
         # cv-bilateral-filter
         elif args.cv_bilateral_filter is not None:
-            check_n(header, args.cv_bilateral_filter)
+            check_n(header, args.cv_bilateral_filter[0])
+            bilateral_filter_diameter = 5
+            if (len(args.cv_bilateral_filter) == 2):
+                bilateral_filter_diameter = args.cv_bilateral_filter[1]
+            __bilateral_filter = lambda x, y: cv.file_bilateral_filter(x, y,
+                                    diameter = bilateral_filter_diameter)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_bilateral_filter,
+                                       args.cv_bilateral_filter[0],
                                        relabel(
-                                            "cv bilateral filter",
+                                            "cv bilateral filter_"+str(bilateral_filter_diameter),
                                             args.label,
                                             True),
-                                       cv.file_bilateral_filter):
+                                       __bilateral_filter):
                 exit(ERROR_CODES.CV_BILATERAL_FILTER_FAILED)
         # cv-canny
         elif args.cv_canny is not None:
-            check_n(header, args.cv_canny)
+            check_n(header, args.cv_canny[0])
+            canny_lower_threshold = 100
+            canny_upper_threshold = 200
+            if (len(args.cv_canny) == 3):
+                canny_lower_threshold = args.cv_canny[1]
+                canny_upper_threshold = args.cv_canny[2]
+            __canny = lambda x, y: cv.file_canny(x, y,
+                         lower_threshold = canny_lower_threshold,
+                         upper_threshold = canny_upper_threshold)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_canny,
+                                       args.cv_canny[0],
                                        relabel(
-                                            "cv canny",
+                                            "cv canny_"+str(canny_lower_threshold)+str(canny_upper_threshold),
                                             args.label,
                                             True),
-                                       cv.file_canny):
+                                       __canny):
                 exit(ERROR_CODES.CV_CANNY_FAILED)
         # cv-contour-threshold
         elif args.cv_contour_threshold is not None:
-            check_n(header, args.cv_contour_threshold)
+            check_n(header, args.cv_contour_threshold[0])
+            contour_threshold = 20
+            if (len(args.cv_contour_threshold) > 1):
+                contour_threshold = args.cv_contour_threshold[1]
+            __contour_threshold = lambda x, y: cv.file_contour_threshold(x, y,
+                                     threshold=contour_threshold)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_contour_threshold,
+                                       args.cv_contour_threshold[0],
                                        relabel(
-                                            "cv contour threshold",
+                                            "cv contour threshold_"+str(contour_threshold),
                                             args.label,
                                             True),
-                                       cv.file_contour_threshold):
+                                       __contour_threshold):
                 exit(ERROR_CODES.CV_CONTOUR_THRESHOLD_FAILED)
         # cv-fast-draw
         elif args.cv_fast_draw is not None:
             check_n(header, args.cv_fast_draw)
             if d_image.file_add_file_column(args.dietrich,
-                                       args.cv_fast_draw,
+                                       args.cv_fast_draw, 
                                        relabel(
                                             "cv fast draw",
                                             args.label,
