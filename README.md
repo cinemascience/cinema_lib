@@ -22,6 +22,17 @@ Optional requirements are:
 
 ### Installation
 
+This command will install cinema_lib in your current directory:
+With [curl](https://curl.haxx.se/):
+```
+curl -s "https://raw.githubusercontent.com/EthanS94/cinema_lib/master/install.sh" | sh
+```
+
+With [wget](https://www.gnu.org/software/wget/):
+```
+wget -qO - "https://raw.githubusercontent.com/EthanS94/cinema_lib/master/install.sh" | sh
+```
+
 To run the command line tool directly from the repository, after cloning:
 ```
 $ git clone https://github.com/cinemascience/cinema_lib.git 
