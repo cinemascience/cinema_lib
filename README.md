@@ -8,14 +8,14 @@ tool, *cinema*.
 
 Minimum requirements are:
 - Python 3.6
-
-Optional requirements are:
 - numpy >=1.13
   - image capabilities
   - OpenCV capabilities
 - scikit-image >=0.13.1 (newer versions may cause regression tests to fail
   due to changing numerics and implementations of algorithms)
   - image capabilities
+
+Optional requirements are:
 - opencv-python >=3.4 (newer versions may cause regression tests to fail
   due to changing numerics)
   - OpenCV capabilities
