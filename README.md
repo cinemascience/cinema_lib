@@ -8,19 +8,38 @@ tool, *cinema*.
 
 Minimum requirements are:
 - Python 3.6
-
-Optional requirements are:
 - numpy >=1.13
   - image capabilities
   - OpenCV capabilities
 - scikit-image >=0.13.1 (newer versions may cause regression tests to fail
   due to changing numerics and implementations of algorithms)
   - image capabilities
+
+Optional requirements are:
 - opencv-python >=3.4 (newer versions may cause regression tests to fail
   due to changing numerics)
   - OpenCV capabilities
 
 ### Installation
+
+This command will install cinema_lib in your current directory:
+With [curl](https://curl.haxx.se/):
+```
+curl -s "https://raw.githubusercontent.com/cinemascience/cinema_lib/master/install.sh" | sh
+```
+To install with missing dependencies:
+```
+curl -s "https://raw.githubusercontent.com/cinemascience/cinema_lib/master/install.sh" | sh -- -f
+```
+
+With [wget](https://www.gnu.org/software/wget/):
+```
+wget -qO - "https://raw.githubusercontent.com/cinemascience/cinema_lib/master/install.sh" | sh
+```
+To install with missing dependencies:
+```
+wget -qO - "https://raw.githubusercontent.com/cinemascience/cinema_lib/master/install.sh" | sh -- -f
+```
 
 To run the command line tool directly from the repository, after cloning:
 ```
