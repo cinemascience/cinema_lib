@@ -27,10 +27,18 @@ With [curl](https://curl.haxx.se/):
 ```
 curl -s "https://raw.githubusercontent.com/EthanS94/cinema_lib/install_script/install.sh" | sh
 ```
+To install with missing dependencies:
+```
+curl -s "https://raw.githubusercontent.com/EthanS94/cinema_lib/install_script/install.sh" | sh -- -f
+```
 
 With [wget](https://www.gnu.org/software/wget/):
 ```
 wget -qO - "https://raw.githubusercontent.com/EthanS94/cinema_lib/install_script/install.sh" | sh
+```
+To install with missing dependencies:
+```
+wget -qO - "https://raw.githubusercontent.com/EthanS94/cinema_lib/install_script/install.sh" | sh -- -f
 ```
 
 To run the command line tool directly from the repository, after cloning:

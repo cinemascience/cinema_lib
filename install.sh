@@ -1,5 +1,21 @@
 #!/bin/sh
 
+parse_args () {
+  while [ "${1}" != "" ]
+  do
+    case ${1} in
+      -f | --force-install )
+        shift
+        force_install=true
+        ;;
+      * )
+        echo "Argument ${1} not recognized! Exiting..."
+        exit 1
+        ;;
+    esac
+  done
+}
+
 cleanup () {
   [ -d ./cinema_lib ] && rm -rf ./cinema_lib
   exit 1
@@ -30,15 +46,25 @@ does_command_exist () {
 check_version () {
   if [ "$2" != "" ]; then
     if echo $2 $3 | awk '{ exit ($1 >= $2) }'; then
-      echo "$1 of at least version $3 is needed. $2 is currently installed."
+      if [ "$force_install" == "true" ]; then
+        echo "Installing $1-$3"
+        pip install $proxy_arg $1==$3
+      else
+        echo "$1 of at least version $3 is needed. $2 is currently installed."
+        sleep 1
+        cleanup
+      fi
+    fi
+  else
+    if [ "$force_install" == "true" ]; then
+      echo "Installing $1-$3"
+      pip install $proxy_arg $1==$3
+    else
+      echo "$1 version could not be found. Check if it is installed."
+      echo "pip install $1 OR pip3 install $1"
       sleep 1
       cleanup
     fi
-  else
-    echo "$1 version could not be found. Check if it is installed."
-    echo "pip install $1 OR pip3 install $1"
-    sleep 1
-    cleanup
   fi
 }
 
@@ -66,6 +92,20 @@ install_cinema_lib () {
 
 # Variables
 github_page="https://github.com/cinemascience/cinema_lib"
+
+# Parse arguments
+parse_args $@
+
+# Check for proxy settings
+if [ "$force_install" == "true" ]; then
+  if [ ! -z $https_proxy ]; then
+    proxy_arg="--proxy=$https_proxy"
+  elif [ ! -z $HTTPS_PROXY ]; then
+    proxy_arg="--proxy=$https_proxy"
+  else
+    proxy_arg=""
+  fi
+fi
 
 # Check for existing cinema_lib
 if [ -d ./cinema_lib ]; then
