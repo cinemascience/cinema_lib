@@ -1,4 +1,6 @@
-## *Cinema* library (*cinema_lib*)
+## Cinema:library repository DEPRICATED
+
+This repository has been **DEPRICATED**. Cinema tools are now available under the [cinemasci](https://github.com/cinemascience/cinemasci) repository.
 
 *cinema_lib* is a set of tools and library for interacting with a Cinema 
 database (currently Spec A and Spec D) through Python and the command line 
